@@ -1,0 +1,11 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Allow any authenticated user to read and write to storage.
+    // This is secure enough for an application where only logged-in
+    // users (like admins and employees) have access.
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

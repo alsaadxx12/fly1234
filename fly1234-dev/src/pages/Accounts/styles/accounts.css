@@ -1,0 +1,655 @@
+/* Accounts Page Styles */
+
+/* Table Styles */
+table {
+  border-collapse: separate !important; 
+  border-spacing: 0;
+  font-size: 0.85rem !important;
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-weight: 800 !important;
+}
+
+th {
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.05em !important;
+  padding: 1rem 0.75rem !important;
+  background-color: #f9fafb !important;
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+}
+
+td {
+  vertical-align: middle !important;
+  padding: 0.875rem 0.75rem !important;
+  font-size: 0.85rem !important;
+  line-height: 1.25 !important;
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-weight: 800 !important;
+}
+
+/* AG Grid Light Theme Overrides */
+.ag-theme-alpine-dark {
+  --ag-background-color: #ffffff !important;
+  --ag-odd-row-background-color: rgba(249, 250, 251, 0.6) !important;
+  --ag-header-background-color: #f9fafb !important;
+  --ag-row-hover-color: rgba(243, 244, 246, 0.8) !important;
+  --ag-selected-row-background-color: rgba(59, 130, 246, 0.08) !important;
+  --ag-row-border-color: #f3f4f6 !important;
+  --ag-border-color: #e5e7eb !important;
+  --ag-secondary-border-color: #e5e7eb !important;
+  --ag-header-foreground-color: #374151 !important;
+  --ag-foreground-color: #1f2937 !important;
+  --ag-disabled-foreground-color: rgba(107, 114, 128, 0.5) !important;
+  --ag-alpine-active-color: #6366f1 !important;
+  --ag-input-focus-border-color: #6366f1 !important;
+  --ag-range-selection-border-color: #6366f1 !important;
+  --ag-range-selection-background-color: rgba(99, 102, 241, 0.15) !important;
+  --ag-font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  --ag-font-size: 0.875rem !important;
+  background-color: #ffffff !important;
+  border-radius: 12px !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell,
+.ag-theme-alpine .ag-header-cell {
+  background: linear-gradient(180deg, #f9fafb 0%, #f3f4f6 100%) !important;
+  color: #374151 !important;
+  font-weight: 800 !important;
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-size: 0.75rem !important;
+  border-bottom: 2px solid #d1d5db !important;
+  border-right: 1px solid #e5e7eb !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  height: 52px !important;
+  line-height: 52px !important;
+  display: block !important;
+}
+
+.ag-theme-alpine-dark .ag-header-cell-label,
+.ag-theme-alpine .ag-header-cell-label {
+  justify-content: center !important;
+  height: 52px !important;
+  line-height: 52px !important;
+}
+
+.ag-theme-alpine-dark .ag-cell {
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  line-height: 52px !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+  border-right: 1px solid #f3f4f6 !important;
+  height: 52px !important;
+  display: block !important;
+}
+
+.ag-theme-alpine .ag-cell {
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  line-height: 52px !important;
+  text-align: center !important;
+  padding: 0 8px !important;
+  border-right: 1px solid #f3f4f6 !important;
+  height: 52px !important;
+  display: block !important;
+}
+
+/* Pagination controls */
+.ag-theme-alpine-dark .ag-paging-panel {
+  color: #4b5563 !important;
+  font-family: 'Tajawal', 'Cairo', sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 0.875rem !important;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%) !important;
+  border-top: 2px solid #e5e7eb !important;
+  padding: 12px 16px !important;
+}
+
+/* Container styles - Simplified */
+
+/* Fix for AG Grid container to expand based on content */
+.ag-theme-alpine-dark.ag-root-wrapper {
+  height: auto !important;
+  min-height: 300px !important;
+}
+
+.ag-root-wrapper-body {
+  height: auto !important;
+  min-height: 400px !important;
+}
+
+.ag-root {
+  height: auto !important;
+  min-height: 400px !important;
+}
+
+.ag-body-viewport {
+  min-height: 400px !important;
+  overflow-y: auto !important;
+  height: auto !important;
+}
+
+.ag-center-cols-viewport {
+  overflow: auto !important;
+  height: auto !important;
+  min-height: 400px !important;
+}
+
+.ag-center-cols-container {
+  min-height: 400px !important;
+  height: auto !important;
+}
+
+/* Row Class Rules */
+.ag-row.hover\:bg-gray-50:hover {
+  background-color: rgba(243, 244, 246, 0.9) !important;
+  transition: all 0.2s ease !important;
+}
+
+.ag-theme-alpine-dark .ag-row {
+  border-bottom: 1px solid #f9fafb !important;
+  transition: all 0.2s ease !important;
+}
+
+.ag-theme-alpine-dark .ag-row.bg-purple-900,
+.ag-theme-alpine-dark .ag-row.bg-purple-100,
+.ag-theme-alpine-dark .ag-row.settlement-row {
+  background: #1a0a2e !important;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0d0517 100%) !important;
+  border: 1px solid #2d1054 !important;
+  box-shadow: 0 2px 8px rgba(26, 10, 46, 0.5) !important;
+  font-weight: 800 !important;
+}
+
+.ag-theme-alpine-dark .ag-row.border-purple-800,
+.ag-theme-alpine-dark .ag-row.border-purple-200 {
+  border-color: #2d1054 !important;
+}
+
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover {
+  background: #e0d5f0 !important;
+  background: linear-gradient(135deg, #e0d5f0 0%, #d0c0e8 100%) !important;
+  box-shadow: 0 4px 12px rgba(224, 213, 240, 0.6) !important;
+}
+
+/* Make sure all text in settlement rows is white */
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell *,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell *,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell * {
+  color: #ffffff !important;
+}
+
+/* Override text-gray-800 and similar classes in settlement rows */
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell span,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell span,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell span,
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell div,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell div,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell div {
+  color: #ffffff !important;
+}
+
+/* Text becomes black on hover */
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell {
+  color: #000000 !important;
+}
+
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell *,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell *,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell * {
+  color: #000000 !important;
+}
+
+/* Override all text colors on hover */
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell .text-gray-800,
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell .font-bold,
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell span,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell span,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell span,
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell div,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell div,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell div {
+  color: #000000 !important;
+}
+
+/* Ensure checkbox text is white in settlement rows */
+.ag-theme-alpine-dark .ag-row.bg-purple-900 .ag-cell label,
+.ag-theme-alpine-dark .ag-row.bg-purple-100 .ag-cell label,
+.ag-theme-alpine-dark .ag-row.settlement-row .ag-cell label {
+  color: #ffffff !important;
+}
+
+/* Checkbox text becomes black on hover */
+.ag-theme-alpine-dark .ag-row.bg-purple-900:hover .ag-cell label,
+.ag-theme-alpine-dark .ag-row.bg-purple-100:hover .ag-cell label,
+.ag-theme-alpine-dark .ag-row.settlement-row:hover .ag-cell label {
+  color: #000000 !important;
+}
+
+/* Very specific rule for settlement rows */
+.ag-theme-alpine-dark div.ag-row.bg-purple-900.border-purple-800.shadow-sm.settlement-row,
+.ag-theme-alpine-dark div.ag-row.bg-purple-100.border-purple-200.shadow-sm.settlement-row {
+  background: #1a0a2e !important;
+  border: 1px solid #2d1054 !important;
+}
+
+/* Light mode styles for settlement rows */
+.ag-row.bg-purple-900,
+.ag-row.bg-purple-100,
+.ag-row.settlement-row {
+  background: #1a0a2e !important;
+  background: linear-gradient(135deg, #1a0a2e 0%, #0d0517 100%) !important;
+  border: 1px solid #2d1054 !important;
+  box-shadow: 0 2px 8px rgba(26, 10, 46, 0.5) !important;
+  font-weight: 800 !important;
+}
+
+.ag-row.border-purple-800,
+.ag-row.border-purple-200 {
+  border-color: #2d1054 !important;
+}
+
+.ag-row.bg-purple-900 .ag-cell,
+.ag-row.bg-purple-100 .ag-cell,
+.ag-row.settlement-row .ag-cell {
+  color: #ffffff !important;
+  background-color: transparent !important;
+}
+
+.ag-row.bg-purple-900:hover,
+.ag-row.bg-purple-100:hover,
+.ag-row.settlement-row:hover {
+  background: #e0d5f0 !important;
+  background: linear-gradient(135deg, #e0d5f0 0%, #d0c0e8 100%) !important;
+  box-shadow: 0 4px 12px rgba(224, 213, 240, 0.6) !important;
+}
+
+/* Make sure all text in settlement rows is white */
+.ag-row.bg-purple-900 .ag-cell *,
+.ag-row.bg-purple-100 .ag-cell *,
+.ag-row.settlement-row .ag-cell * {
+  color: #ffffff !important;
+}
+
+/* Override text-gray-800 and similar classes in settlement rows */
+.ag-row.bg-purple-900 .ag-cell .text-gray-800,
+.ag-row.bg-purple-100 .ag-cell .text-gray-800,
+.ag-row.settlement-row .ag-cell .text-gray-800,
+.ag-row.bg-purple-900 .ag-cell .font-bold,
+.ag-row.bg-purple-100 .ag-cell .font-bold,
+.ag-row.settlement-row .ag-cell .font-bold,
+.ag-row.bg-purple-900 .ag-cell span,
+.ag-row.bg-purple-100 .ag-cell span,
+.ag-row.settlement-row .ag-cell span,
+.ag-row.bg-purple-900 .ag-cell div,
+.ag-row.bg-purple-100 .ag-cell div,
+.ag-row.settlement-row .ag-cell div {
+  color: #ffffff !important;
+}
+
+/* Text becomes black on hover */
+.ag-row.bg-purple-900:hover .ag-cell,
+.ag-row.bg-purple-100:hover .ag-cell,
+.ag-row.settlement-row:hover .ag-cell {
+  color: #000000 !important;
+}
+
+.ag-row.bg-purple-900:hover .ag-cell *,
+.ag-row.bg-purple-100:hover .ag-cell *,
+.ag-row.settlement-row:hover .ag-cell * {
+  color: #000000 !important;
+}
+
+/* Override all text colors on hover */
+.ag-row.bg-purple-900:hover .ag-cell .text-gray-800,
+.ag-row.bg-purple-100:hover .ag-cell .text-gray-800,
+.ag-row.settlement-row:hover .ag-cell .text-gray-800,
+.ag-row.bg-purple-900:hover .ag-cell .font-bold,
+.ag-row.bg-purple-100:hover .ag-cell .font-bold,
+.ag-row.settlement-row:hover .ag-cell .font-bold,
+.ag-row.bg-purple-900:hover .ag-cell span,
+.ag-row.bg-purple-100:hover .ag-cell span,
+.ag-row.settlement-row:hover .ag-cell span,
+.ag-row.bg-purple-900:hover .ag-cell div,
+.ag-row.bg-purple-100:hover .ag-cell div,
+.ag-row.settlement-row:hover .ag-cell div {
+  color: #000000 !important;
+}
+
+/* Ensure checkbox text is white in settlement rows */
+.ag-row.bg-purple-900 .ag-cell label,
+.ag-row.bg-purple-100 .ag-cell label,
+.ag-row.settlement-row .ag-cell label {
+  color: #ffffff !important;
+}
+
+/* Checkbox text becomes black on hover */
+.ag-row.bg-purple-900:hover .ag-cell label,
+.ag-row.bg-purple-100:hover .ag-cell label,
+.ag-row.settlement-row:hover .ag-cell label {
+  color: #000000 !important;
+}
+
+/* Very specific rule for settlement rows in light mode */
+div.ag-row.bg-purple-900.border-purple-800.shadow-sm.settlement-row,
+div.ag-row.bg-purple-100.border-purple-200.shadow-sm.settlement-row {
+  background: #1a0a2e !important;
+  border: 1px solid #2d1054 !important;
+}
+
+/* Mobile Card View */
+.voucher-card {
+  background: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+}
+ 
+.voucher-card:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+}
+
+.voucher-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+} 
+
+.voucher-card-body {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+ 
+.voucher-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.voucher-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.info-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.info-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .ag-theme-alpine-dark {
+    display: none;
+  }
+  
+  .mobile-view {
+    display: block;
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-view {
+    display: none;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 8px;
+  border: 2px solid #f3f4f6;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(59, 130, 246, 0.5) #f3f4f6;
+}
+
+/* Badge Styles */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+ 
+.badge-success {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-info {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Action Buttons */
+.action-icon-button {
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s ease;
+}
+
+.action-icon-button:hover {
+  background-color: #f3f4f6;
+}
+
+.action-icon-button.edit:hover {
+  color: #3b82f6;
+  background-color: #eff6ff;
+}
+
+.action-icon-button.delete:hover {
+  color: #ef4444;
+  background-color: #fee2e2;
+}
+
+.action-icon-button.view:hover {
+  color: #10b981;
+  background-color: #ecfdf5;
+}
+
+.action-icon-button.print:hover {
+  color: #8b5cf6;
+  background-color: #f5f3ff;
+}
+
+/* Settlement header styles */
+.ag-theme-alpine-dark .settlement-header {
+  background: linear-gradient(135deg, #1e0740 0%, #0f021f 100%) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid #2d0a5a !important;
+}
+
+.ag-theme-alpine-dark .confirmation-header {
+  background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%) !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Settlement row animation */
+.ag-theme-alpine-dark .ag-row.settlement-row {
+  animation: settlement-glow 0.3s ease-in-out;
+}
+
+@keyframes settlement-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(30, 7, 64, 0);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(30, 7, 64, 0.6);
+  }
+  100% {
+    box-shadow: 0 2px 8px rgba(30, 7, 64, 0.4);
+  }
+}
+
+/* Pagination Panel */
+.ag-paging-panel {
+  min-height: 50px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 10px !important;
+  border-top: 1px solid #e5e7eb !important;
+}
+
+/* Fix for container height */
+.ag-theme-alpine-dark .ag-root-wrapper {
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  height: auto !important;
+}
+
+.ag-theme-alpine-dark .ag-root {
+  flex: 1;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  height: auto !important;
+}
+
+.ag-theme-alpine-dark .ag-body-viewport {
+  flex: 1;
+  overflow: visible;
+  height: auto !important;
+}
+
+.ag-theme-alpine-dark .ag-center-cols-viewport {
+  overflow-x: auto;
+  overflow-y: visible;
+  height: auto !important;
+}
+
+.ag-theme-alpine-dark .ag-center-cols-container {
+  height: auto !important;
+  min-height: 200px;
+}
+
+/* Enhanced table styling */
+.ag-theme-alpine-dark .ag-root-wrapper {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+}
+
+.ag-theme-alpine .ag-root-wrapper {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+}
+
+/* Action buttons in cells */
+.ag-theme-alpine-dark .actions-cell,
+.ag-theme-alpine .actions-cell {
+  padding: 0 4px !important;
+  height: 52px !important;
+  line-height: 52px !important;
+}
+
+.ag-theme-alpine-dark .actions-cell > div,
+.ag-theme-alpine .actions-cell > div {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 52px !important;
+  gap: 4px !important;
+}
+
+.ag-theme-alpine-dark .actions-cell button,
+.ag-theme-alpine .actions-cell button {
+  transition: all 0.2s ease !important;
+}
+
+.ag-theme-alpine-dark .actions-cell button:hover,
+.ag-theme-alpine .actions-cell button:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* Invoice number styling */
+.ag-theme-alpine-dark .ag-cell:has(.font-bold.text-gray-800) {
+  font-weight: 700 !important;
+}
+
+/* Currency badges */
+.ag-theme-alpine-dark .ag-cell .bg-indigo-50 {
+  box-shadow: 0 1px 3px rgba(99, 102, 241, 0.1) !important;
+}
+
+/* Hover effects on regular rows */
+.ag-theme-alpine-dark .ag-row:not(.settlement-row):hover {
+  background-color: rgba(243, 244, 246, 0.7) !important;
+  transition: all 0.2s ease !important;
+}
