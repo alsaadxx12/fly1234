@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Fingerprint,
   Briefcase,
@@ -11,7 +12,8 @@ import {
   History,
   LogIn,
   LogOut as LogOutIcon,
-  CircleX
+  CircleX,
+  LayoutDashboard
 } from 'lucide-react';
 import { useTheme } from '../../../contexts/ThemeContext';
 import useAttendance from '../hooks/useAttendance';
@@ -20,6 +22,7 @@ import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 
 const AttendanceCard: React.FC = () => {
+  const navigate = useNavigate();
   const { theme } = useTheme();
   const { employee, loading: authLoading } = useAuth();
   const {
@@ -61,9 +64,9 @@ const AttendanceCard: React.FC = () => {
   }
 
   return (
-    <div className={`w-full max-w-md relative overflow-hidden transition-all duration-500 rounded-[2.5rem] shadow-2xl border ${theme === 'dark'
-        ? 'bg-gray-900/80 border-gray-800 backdrop-blur-xl text-white'
-        : 'bg-white border-blue-50 text-gray-900'
+    <div className={`w-full max-w-sm relative overflow-hidden transition-all duration-500 rounded-[2rem] shadow-2xl border ${theme === 'dark'
+      ? 'bg-gray-900/80 border-gray-800 backdrop-blur-xl text-white'
+      : 'bg-white border-blue-50 text-gray-900'
       }`}>
       {/* Dynamic Background Gradient */}
       <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full blur-[100px] opacity-20 pointer-events-none transition-all duration-700 ${isCheckedIn ? 'bg-rose-500' : 'bg-emerald-500'
@@ -72,7 +75,7 @@ const AttendanceCard: React.FC = () => {
         }`} />
 
       {/* Header Info */}
-      <div className="relative p-8 pb-0">
+      <div className="relative p-6 pb-0">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-2xl transition-all duration-300 ${theme === 'dark' ? 'bg-white/5' : 'bg-blue-50 text-blue-600'
@@ -86,8 +89,8 @@ const AttendanceCard: React.FC = () => {
           </div>
 
           <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border ${isCheckedIn
-              ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
-              : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
+            ? 'bg-rose-500/10 text-rose-500 border-rose-500/20 shadow-[0_0_15px_rgba(244,63,94,0.1)]'
+            : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)]'
             }`}>
             <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${isCheckedIn ? 'bg-rose-500' : 'bg-emerald-500'}`} />
             {isCheckedIn ? 'مسجل حضور' : 'غير مسجل'}
@@ -115,7 +118,7 @@ const AttendanceCard: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative p-8 pt-6 space-y-6">
+      <div className="relative p-6 pt-6 space-y-6">
         {/* Info Grid */}
         <div className="grid grid-cols-2 gap-4">
           <div className={`p-4 rounded-[2rem] border transition-all duration-300 hover:scale-[1.02] ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-blue-50/50 border-blue-100/50'
@@ -207,8 +210,8 @@ const AttendanceCard: React.FC = () => {
               onClick={handleAction}
               disabled={loading || !employee}
               className={`relative w-32 h-32 rounded-full flex flex-col items-center justify-center transition-all duration-500 transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 shadow-2xl ${isCheckedIn
-                  ? 'bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 shadow-rose-500/40'
-                  : 'bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 shadow-emerald-500/40'
+                ? 'bg-gradient-to-br from-rose-500 via-rose-600 to-rose-700 shadow-rose-500/40'
+                : 'bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 shadow-emerald-500/40'
                 }`}
               title={isCheckedIn ? 'تسجيل الخروج' : 'تسجيل الحضور'}
             >
@@ -233,12 +236,27 @@ const AttendanceCard: React.FC = () => {
         </div>
       </div>
 
+      {/* Back to Dashboard Button */}
+      <div className="flex justify-center pb-2">
+        <button
+          onClick={() => navigate('/dashboard')}
+          className={`flex items-center gap-2 px-6 py-3 rounded-2xl transition-all duration-300 font-bold text-sm ${theme === 'dark'
+            ? 'bg-white/5 hover:bg-white/10 text-white border border-white/5'
+            : 'bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200'
+            }`}
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          <span>لوحة التحكم</span>
+        </button>
+      </div>
+
+
       {/* Footer Branding */}
       <div className={`px-8 py-4 text-center border-t ${theme === 'dark' ? 'bg-black/40 border-white/5' : 'bg-gray-50 border-gray-100'
         }`}>
         <p className="text-[10px] font-black opacity-30 tracking-[0.3em] uppercase">Fly4All Attendance System</p>
       </div>
-    </div>
+    </div >
   );
 };
 

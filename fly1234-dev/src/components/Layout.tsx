@@ -19,6 +19,8 @@ import GlobalModals from './GlobalModals';
 import useIssues from '../hooks/useIssues';
 import useMastercardIssues from '../pages/MastercardIssues/hooks/useMastercardIssues';
 
+import { useNotifications } from '../hooks/useNotifications';
+
 const NOTIFICATION_SOUNDS = [
   { id: 'notification_high_pitch_alert', url: 'https://actions.google.com/sounds/v1/office/notification_high_pitch_alert.ogg' },
   { id: 'mechanical_clock_ring', url: 'https://actions.google.com/sounds/v1/alarms/mechanical_clock_ring.ogg' },
@@ -39,6 +41,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { theme, customSettings } = useTheme();
   const { showNotification } = useNotification();
   const { currentRate } = useExchangeRate();
+
+  // Initialize Push Notifications
+  useNotifications();
 
   // PWA Install State
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -410,8 +415,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     align="center"
                     collisionPadding={16}
                     className={`z-50 w-[280px] sm:w-[320px] rounded-[2.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.7)] border backdrop-blur-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col ${theme === 'dark'
-                        ? 'bg-gray-950/90 border-white/10 text-white'
-                        : 'bg-white/90 border-gray-100 text-gray-900'
+                      ? 'bg-gray-950/90 border-white/10 text-white'
+                      : 'bg-white/90 border-gray-100 text-gray-900'
                       }`}
                   >
                     {/* Compact Header */}
@@ -449,14 +454,14 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                   key={issue.id}
                                   onClick={() => setIsIssuesPopoverOpen(false)}
                                   className={`group block w-[240px] p-3 rounded-2xl border transition-all duration-300 hover:scale-105 relative overflow-hidden flex-shrink-0 ${theme === 'dark'
-                                      ? 'bg-white/5 border-white/5 hover:border-blue-500/30'
-                                      : 'bg-white border-gray-100 shadow-sm hover:border-blue-200'
+                                    ? 'bg-white/5 border-white/5 hover:border-blue-500/30'
+                                    : 'bg-white border-gray-100 shadow-sm hover:border-blue-200'
                                     }`}
                                 >
                                   <div className="flex items-start gap-3">
                                     <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${isMastercardIssue
-                                        ? 'bg-purple-500/10 border-purple-500/10 text-purple-500'
-                                        : 'bg-blue-500/10 border-blue-500/10 text-blue-500'
+                                      ? 'bg-purple-500/10 border-purple-500/10 text-purple-500'
+                                      : 'bg-blue-500/10 border-blue-500/10 text-blue-500'
                                       }`}>
                                       {isMastercardIssue ? <CreditCard className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                                     </div>

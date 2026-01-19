@@ -3,6 +3,7 @@ import { getAuth, connectAuthEmulator, setPersistence, browserLocalPersistence }
 import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getStorage, connectStorageEmulator, FirebaseStorage } from 'firebase/storage';
 import { getDatabase, connectDatabaseEmulator } from 'firebase/database';
+import { getMessaging } from 'firebase/messaging';
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -24,6 +25,15 @@ const db = getFirestore(app);
 const storage: FirebaseStorage = getStorage(app);
 const rtdb = getDatabase(app);
 
+let messaging: any = null;
+try {
+  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    messaging = getMessaging(app);
+  }
+} catch (error) {
+  console.warn('Firebase Messaging failed to initialize:', error);
+}
+
 // تعيين الاستمرارية للمصادقة لضمان بقاء المستخدم مسجل الدخول
 setPersistence(auth, browserLocalPersistence)
   .catch(error => {
@@ -42,4 +52,4 @@ if (window.location.hostname === 'localhost') {
   }
 }
 
-export { db, auth, rtdb, storage };
+export { db, auth, rtdb, storage, messaging };
