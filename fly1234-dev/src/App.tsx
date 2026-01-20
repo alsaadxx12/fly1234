@@ -39,14 +39,12 @@ const LoadingFallback = () => {
   const { theme } = useTheme();
 
   return (
-    <div className={`flex items-center justify-center h-screen ${
-      theme === 'dark' ? 'bg-gray-900' : 'bg-white'
-    }`}>
+    <div className={`flex items-center justify-center h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+      }`}>
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-        <p className={`${
-          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-        }`}>جاري التحميل...</p>
+        <p className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          }`}>جاري التحميل...</p>
       </div>
     </div>
   );
@@ -73,8 +71,8 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/attendance-standalone" /> : <LandingPage />} />
       <Route path="/" element={user ? <Navigate to="/attendance-standalone" /> : <LandingPage />} />
       <Route path="/voucher/:voucherId" element={<Suspense fallback={<LoadingFallback />}><PublicVoucher /></Suspense>} />
-      
-      <Route 
+
+      <Route
         path="/attendance-standalone"
         element={
           <AuthGuard>
@@ -84,7 +82,7 @@ function AppRoutes() {
           </AuthGuard>
         }
       />
-      
+
       <Route
         path="/*"
         element={
@@ -125,6 +123,8 @@ function AppRoutes() {
   );
 }
 
+import { Toaster } from 'sonner';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -133,6 +133,7 @@ export default function App() {
           <LanguageProvider>
             <NotificationProvider>
               <GlobalModalsProvider>
+                <Toaster position="top-center" richColors />
                 <GlobalApiSync />
                 <AppRoutes />
               </GlobalModalsProvider>
@@ -143,3 +144,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+

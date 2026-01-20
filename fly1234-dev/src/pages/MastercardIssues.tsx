@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
-import { Plus, AlertTriangle, CheckCircle, Clock, Search, Trash2, User, CheckCircle2, ChevronLeft, ChevronRight, Edit, Upload, Image as ImageIcon, DollarSign, X, Calendar } from 'lucide-react';
+import { Plus, AlertTriangle, CheckCircle, Clock, Search, Trash2, User, CheckCircle2, ChevronLeft, ChevronRight, Edit, Upload, Image as ImageIcon, DollarSign, X, Calendar, Activity, CreditCard, UserCircle, Shield, Wallet, Repeat } from 'lucide-react';
+import { toast } from 'sonner';
 import useMastercardIssues from './MastercardIssues/hooks/useMastercardIssues';
 import { MastercardIssue, IssuePriority } from './MastercardIssues/types';
 import ModernModal from '../components/ModernModal';
@@ -143,7 +144,7 @@ export default function MastercardIssues() {
 
   const handleFormSubmit = async () => {
     if (!newIssue.title || !newIssue.mastercardAccountNumber) {
-      alert('يرجى ملء جميع الحقول المطلوبة');
+      toast.error('يرجى ملء جميع الحقول المطلوبة');
       return;
     }
 
@@ -164,8 +165,10 @@ export default function MastercardIssues() {
 
     if (issueToEdit) {
       await updateIssue(issueToEdit.id, issueData as any);
+      toast.success('تم تحديث المشكلة بنجاح');
     } else {
       await addIssue(issueData as any);
+      toast.success('تم إضافة المشكلة بنجاح');
     }
 
     setIsAddOrEditModalOpen(false);
@@ -183,17 +186,27 @@ export default function MastercardIssues() {
     setGalleryIndex(0);
   };
 
-  const confirmResolveIssue = () => {
+  const confirmResolveIssue = async () => {
     if (issueToResolve) {
-      updateIssueStatus(issueToResolve.id, 'resolved');
-      setIssueToResolve(null);
+      try {
+        await updateIssueStatus(issueToResolve.id, 'resolved');
+        toast.success('تم إنجاز المشكلة بنجاح');
+        setIssueToResolve(null);
+      } catch (error) {
+        toast.error('حدث خطأ أثناء تحديث الحالة');
+      }
     }
   };
 
   const confirmDeleteIssue = async () => {
     if (issueToDelete) {
-      await deleteIssue(issueToDelete.id);
-      setIssueToDelete(null);
+      try {
+        await deleteIssue(issueToDelete.id);
+        toast.success('تم حذف المشكلة بنجاح');
+        setIssueToDelete(null);
+      } catch (error) {
+        toast.error('حدث خطأ أثناء الحذف');
+      }
     }
   };
 
@@ -467,7 +480,10 @@ export default function MastercardIssues() {
           {modalStep === 1 && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold mb-1">نوع المشكلة</label>
+                <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                  <Activity className="w-4 h-4 text-orange-500" />
+                  نوع المشكلة
+                </label>
                 <select
                   value={newIssue.title}
                   onChange={(e) => setNewIssue({ ...newIssue, title: e.target.value })}
@@ -483,11 +499,17 @@ export default function MastercardIssues() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold mb-1 text-center">تاريخ المشكلة</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <Calendar className="w-4 h-4 text-orange-500" />
+                    تاريخ المشكلة
+                  </label>
                   <ArabicDatePicker value={newIssue.issueDate} onChange={(date) => setNewIssue({ ...newIssue, issueDate: date })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-1">الأولوية</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <AlertTriangle className="w-4 h-4 text-orange-500" />
+                    الأولوية
+                  </label>
                   <select
                     value={newIssue.priority}
                     onChange={(e) => setNewIssue({ ...newIssue, priority: e.target.value as IssuePriority })}
@@ -500,7 +522,10 @@ export default function MastercardIssues() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-bold mb-1">وصف المشكلة</label>
+                <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                  <Activity className="w-4 h-4 text-orange-500" />
+                  وصف المشكلة
+                </label>
                 <textarea
                   value={newIssue.description}
                   onChange={(e) => setNewIssue({ ...newIssue, description: e.target.value })}
@@ -515,7 +540,10 @@ export default function MastercardIssues() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold mb-1">رقم الحساب (AccountNumber)</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <CreditCard className="w-4 h-4 text-orange-500" />
+                    رقم الحساب (AccountNumber)
+                  </label>
                   <input
                     type="text"
                     value={newIssue.mastercardAccountNumber}
@@ -524,7 +552,10 @@ export default function MastercardIssues() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-1">اسم صاحب البطاقة</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <UserCircle className="w-4 h-4 text-orange-500" />
+                    اسم صاحب البطاقة
+                  </label>
                   <input
                     type="text"
                     value={newIssue.cardholderName}
@@ -535,7 +566,10 @@ export default function MastercardIssues() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold mb-1">البريد الإلكتروني للزبون</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <UserCircle className="w-4 h-4 text-orange-500" />
+                    البريد الإلكتروني للزبون
+                  </label>
                   <input
                     type="email"
                     value={newIssue.customerEmail}
@@ -544,7 +578,10 @@ export default function MastercardIssues() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold mb-1">اسم المستخدم</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <Shield className="w-4 h-4 text-orange-500" />
+                    اسم المستخدم
+                  </label>
                   <input
                     type="text"
                     value={newIssue.customerUsername}
@@ -555,7 +592,10 @@ export default function MastercardIssues() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-bold mb-1">مبلغ الاسترجاع (اختياري)</label>
+                  <label className="flex items-center gap-2 text-sm font-bold mb-1">
+                    <Wallet className="w-4 h-4 text-orange-500" />
+                    مبلغ الاسترجاع (اختياري)
+                  </label>
                   <input
                     type="number"
                     value={newIssue.refundAmount}
@@ -581,7 +621,10 @@ export default function MastercardIssues() {
                     <option value="balance">الرصيد</option>
                   </select>
                   <div>
-                    <label className="block text-sm font-bold mb-1 text-center font-bold">نوع التحويل</label>
+                    <label className="flex items-center gap-2 text-sm font-bold mb-1 text-center font-bold">
+                      <Repeat className="w-4 h-4 text-orange-500" />
+                      نوع التحويل
+                    </label>
                     <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-xl">
                       <button
                         type="button"
