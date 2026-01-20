@@ -232,7 +232,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar, isColla
           <div
             className={`rounded-2xl shadow-2xl max-w-md w-full overflow-hidden ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'
               }`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e: any) => e.stopPropagation()}
           >
             <div className="p-5 bg-gradient-to-r from-amber-500 to-orange-500 text-white">
               <div className="flex items-center justify-between">

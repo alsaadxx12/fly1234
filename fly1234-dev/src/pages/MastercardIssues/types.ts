@@ -20,6 +20,7 @@ export interface MastercardIssue {
   updatedBy?: string;
   updatedByName?: string;
   refundAmount?: number;
+  refundCurrency?: 'USD' | 'IQD';
   refundMethod?: 'mastercard' | 'balance';
   transactionImageURLs?: string[];
   mastercardAccountNumber?: string;

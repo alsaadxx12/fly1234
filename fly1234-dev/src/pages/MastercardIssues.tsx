@@ -125,7 +125,7 @@ export default function MastercardIssues() {
       description: issue.description || '',
       issueDate: new Date(issue.issueDate),
       priority: issue.priority,
-      refundAmount: issue.refundAmount || '',
+      refundAmount: issue.refundAmount?.toString() || '',
       refundCurrency: issue.refundCurrency || 'USD',
       refundMethod: issue.refundMethod || 'balance',
       transactionImageFiles: [],
@@ -147,7 +147,7 @@ export default function MastercardIssues() {
     let upToDateImageURLs = [...newIssue.transactionImageURLs];
     if (newIssue.transactionImageFiles.length > 0) {
       for (const file of newIssue.transactionImageFiles) {
-        const url = await uploadImage(file, 'mastercard-issues');
+        const url = await uploadImage(file);
         if (url) upToDateImageURLs.push(url);
       }
     }
@@ -673,18 +673,30 @@ export default function MastercardIssues() {
               historyPaginatedIssues.map(issue => (
                 <div key={issue.id} className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <span className="font-bold text-gray-800 dark:text-gray-200">{issue.title}</span>
-                      <p className="text-xs text-gray-500">حساب: {issue.mastercardAccountNumber}</p>
+                      <div className="flex items-center gap-4 mt-0.5">
+                        <p className="text-xs text-gray-500 font-bold">حساب: <span className="text-gray-700 dark:text-gray-300">{issue.mastercardAccountNumber}</span></p>
+                        {issue.refundAmount && (
+                          <p className="text-xs text-orange-600 font-bold flex items-center gap-1">
+                            <DollarSign className="w-3 h-3" />
+                            {issue.refundAmount} {issue.refundMethod === 'mastercard' ? 'USD' : 'IQD'}
+                          </p>
+                        )}
+                      </div>
+                      {issue.description && (
+                        <p className="text-[11px] text-gray-400 mt-1 line-clamp-1">{issue.description}</p>
+                      )}
                     </div>
                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${priorityConfig[issue.priority].color}`}>
                       {priorityConfig[issue.priority].label}
                     </span>
                   </div>
-                  <div className="text-xs text-gray-500 mt-2 flex items-center justify-between">
-                    <span>صاحب البطاقة: {issue.cardholderName}</span>
-                    <span>بدأ المتابعة: {issue.assignedToName}</span>
-                    <span>تاريخ الإنجاز: {issue.resolvedAt ? new Date(issue.resolvedAt).toLocaleDateString('en-GB') : '-'}</span>
+                  <div className="text-xs text-gray-500 mt-2 flex flex-wrap gap-x-6 gap-y-1">
+                    <span>صاحب البطاقة: <span className="text-gray-700 dark:text-gray-300 font-bold">{issue.cardholderName || '-'}</span></span>
+                    <span>بدأ المتابعة: <span className="text-gray-700 dark:text-gray-300 font-bold">{issue.assignedToName || '-'}</span></span>
+                    <span>من أنجزها: <span className="text-gray-700 dark:text-gray-300 font-bold">{issue.resolvedByName || '-'}</span></span>
+                    <span>تاريخ الإنجاز: <span className="text-gray-700 dark:text-gray-300 font-bold">{issue.resolvedAt ? new Date(issue.resolvedAt).toLocaleDateString('en-GB') : '-'}</span></span>
                   </div>
                 </div>
               ))

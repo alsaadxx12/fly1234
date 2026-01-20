@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Fingerprint,
@@ -7,7 +7,6 @@ import {
   Shield,
   Loader2,
   Navigation,
-  Calendar,
   User,
   History,
   LogIn,
@@ -18,8 +17,7 @@ import {
 import { useTheme } from '../../../contexts/ThemeContext';
 import useAttendance from '../hooks/useAttendance';
 import { useAuth } from '../../../contexts/AuthContext';
-import { format } from 'date-fns';
-import { ar } from 'date-fns/locale';
+
 
 const AttendanceCard: React.FC = () => {
   const navigate = useNavigate();
@@ -47,9 +45,8 @@ const AttendanceCard: React.FC = () => {
     }
   };
 
-  const currentTime = useMemo(() => new Date(), []);
-  const dayName = format(currentTime, 'EEEE', { locale: ar });
-  const fullDate = format(currentTime, 'PPP', { locale: ar });
+
+
 
   if (loading && !employee) {
     return (

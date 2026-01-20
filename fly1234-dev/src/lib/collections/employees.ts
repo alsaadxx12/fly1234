@@ -50,7 +50,7 @@ export const getEmployeeByUserId = async (userId: string) => {
   try {
     const q = query(employeesCollection, where("userId", "==", userId));
     const snapshot = await getDocs(q);
-    
+
     if (snapshot.empty) return null;
 
     const employeeDoc = snapshot.docs[0];
@@ -62,7 +62,7 @@ export const getEmployeeByUserId = async (userId: string) => {
       try {
         const permissionGroupRef = doc(db, 'permissions', employeeData.role);
         const permissionGroupSnap = await getDoc(permissionGroupRef);
-        
+
         if (permissionGroupSnap.exists()) {
           permissionGroup = {
             id: permissionGroupSnap.id,
@@ -140,46 +140,46 @@ export const updateEmployee = async (id: string, data: Partial<Employee>) => {
 };
 
 export const deleteEmployeeFile = async (employeeId: string, fileId: string) => {
-    const employeeRef = doc(db, 'employees', employeeId);
-    const employeeDoc = await getDoc(employeeRef);
+  const employeeRef = doc(db, 'employees', employeeId);
+  const employeeDoc = await getDoc(employeeRef);
 
-    if (!employeeDoc.exists()) {
-      throw new Error("Employee not found");
+  if (!employeeDoc.exists()) {
+    throw new Error("Employee not found");
+  }
+
+  const employeeData = employeeDoc.data() as Employee;
+  const fileToDelete = employeeData.files?.find(f => f.id === fileId);
+
+  if (!fileToDelete) {
+    console.warn("File not found in employee document.");
+    return;
+  }
+
+  try {
+    // 1. Delete from Storage if URL is valid
+    if (fileToDelete.url && fileToDelete.url.includes('firebasestorage.googleapis.com')) {
+      const fileRef = ref(storage, fileToDelete.url);
+      await deleteObject(fileRef);
     }
 
-    const employeeData = employeeDoc.data() as Employee;
-    const fileToDelete = employeeData.files?.find(f => f.id === fileId);
-
-    if (!fileToDelete) {
-      console.warn("File not found in employee document.");
-      return;
-    }
-
-    try {
-      // 1. Delete from Storage if URL is valid
-      if (fileToDelete.url && fileToDelete.url.includes('firebasestorage.googleapis.com')) {
-        const fileRef = ref(storage, fileToDelete.url);
-        await deleteObject(fileRef);
-      }
-
-      // 2. Delete from Firestore
+    // 2. Delete from Firestore
+    await updateDoc(employeeRef, {
+      files: arrayRemove(fileToDelete)
+    });
+  } catch (error: any) {
+    if (error.code === 'storage/object-not-found') {
+      console.warn('File not found in Storage, but removing from Firestore anyway.');
       await updateDoc(employeeRef, {
         files: arrayRemove(fileToDelete)
       });
-    } catch (error: any) {
-      if (error.code === 'storage/object-not-found') {
-        console.warn('File not found in Storage, but removing from Firestore anyway.');
-        await updateDoc(employeeRef, {
-          files: arrayRemove(fileToDelete)
-        });
-      } else {
-        console.error("Error deleting file: ", error);
-        throw error;
-      }
+    } else {
+      console.error("Error deleting file: ", error);
+      throw error;
     }
+  }
 };
 
-const deleteEmployee = async (id: string) => {
+export const deleteEmployee = async (id: string) => {
   try {
     const employeeRef = doc(db, COLLECTION_NAME, id);
     await deleteDoc(employeeRef);
@@ -189,7 +189,7 @@ const deleteEmployee = async (id: string) => {
   }
 };
 
-const getEmployeesByRole = async (role: string) => {
+export const getEmployeesByRole = async (role: string) => {
   try {
     const q = query(employeesCollection, where("role", "==", role));
     const snapshot = await getDocs(q);
@@ -203,7 +203,7 @@ const getEmployeesByRole = async (role: string) => {
   }
 };
 
-const getActiveEmployees = async () => {
+export const getActiveEmployees = async () => {
   try {
     const q = query(employeesCollection, where("isActive", "==", true));
     const snapshot = await getDocs(q);

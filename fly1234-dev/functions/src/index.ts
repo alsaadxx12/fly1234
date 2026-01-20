@@ -1,6 +1,6 @@
 import * as functions from "firebase-functions";
 import axios from "axios";
-import * as cors from "cors";
+import cors from "cors";
 
 const corsHandler = cors({ origin: true });
 
@@ -28,14 +28,14 @@ export const flightProxy = functions.https.onRequest((request, response) => {
           "Content-Type": "application/json",
         },
       };
-      
+
       // Add Authorization header if token is provided
       if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;
       }
 
       const apiResponse = await axios(config);
-      
+
       response.status(200).json(apiResponse.data);
 
     } catch (error) {

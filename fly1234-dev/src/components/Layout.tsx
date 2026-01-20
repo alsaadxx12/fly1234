@@ -92,8 +92,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { issues } = useIssues();
   const { issues: mastercardIssues } = useMastercardIssues();
   const [isIssuesPopoverOpen, setIsIssuesPopoverOpen] = useState(false);
-  const pendingIssues = issues.filter(issue => issue.status === 'pending' || issue.status === 'in_progress');
-  const pendingMastercardIssues = mastercardIssues.filter(issue => issue.status === 'pending' || issue.status === 'in_progress');
+  const pendingIssues = issues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
+  const pendingMastercardIssues = mastercardIssues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
   const allPendingIssues = [...pendingIssues, ...pendingMastercardIssues];
   const [departmentName, setDepartmentName] = useState('');
 
@@ -133,7 +133,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   useEffect(() => {
     const settingsRef = doc(db, 'notification_settings', 'global');
-    const unsubscribe = onSnapshot(settingsRef, (doc) => {
+    const unsubscribe = onSnapshot(settingsRef, (doc: any) => {
       if (doc.exists()) {
         const data = doc.data();
         setNotificationSettings({
@@ -374,7 +374,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                 src={customSettings.logoUrl}
                 alt="Logo"
                 className="h-8 md:h-9 w-auto object-contain"
-                onError={(e) => (e.currentTarget.style.display = 'none')}
+                onError={(e: any) => (e.currentTarget.style.display = 'none')}
               />
             </div>
 
@@ -414,7 +414,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     sideOffset={12}
                     align="center"
                     collisionPadding={16}
-                    className={`z-50 w-[280px] sm:w-[320px] rounded-[2.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.7)] border backdrop-blur-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col ${theme === 'dark'
+                    className={`z-50 w-[280px] sm:w-[320px] max-h-[85vh] rounded-[2.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.7)] border backdrop-blur-3xl overflow-hidden animate-in fade-in zoom-in-95 duration-500 flex flex-col ${theme === 'dark'
                       ? 'bg-gray-950/90 border-white/10 text-white'
                       : 'bg-white/90 border-gray-100 text-gray-900'
                       }`}
@@ -438,12 +438,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       </Link>
                     </div>
 
-                    {/* Highly Controlled Width List */}
-                    <ScrollArea.Root className="w-full h-[380px] sm:h-[450px] overflow-hidden flex-1">
-                      <ScrollArea.Viewport className="w-full h-full py-4 px-2">
+                    {/* Scrollable area for notifications */}
+                    <ScrollArea.Root className="w-full flex-1 min-h-[200px] overflow-hidden">
+                      <ScrollArea.Viewport className="w-full max-h-[400px] sm:max-h-[480px] py-4 px-2">
                         {allPendingIssues.length > 0 ? (
                           <div className="flex flex-col items-center gap-3">
-                            {allPendingIssues.map((issue) => {
+                            {allPendingIssues.map((issue: any) => {
                               const isMastercardIssue = 'refundAmount' in issue;
                               const linkTo = isMastercardIssue ? "/mastercard-issues" : "/pending-issues";
                               const priority = priorityConfig[issue.priority as keyof typeof priorityConfig] || priorityConfig.low;
@@ -546,7 +546,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                     <div className="p-2 border-b border-gray-200 dark:border-gray-700 bg-blue-50/30 dark:bg-blue-900/5">
                       <div className="text-[10px] font-black text-gray-400 uppercase px-2 mb-1">حسابات واتساب</div>
                       <div className="space-y-1">
-                        {whatsappAccounts.map(account => (
+                        {whatsappAccounts.map((account: any) => (
                           <button
                             key={account.instance_id}
                             onClick={() => handleAccountSelect(account)}
@@ -624,7 +624,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       </button>
                     )}
                     <button
-                      onClick={() => signOut().catch(error => console.error('Error during sign out:', error))}
+                      onClick={() => signOut().catch((error: any) => console.error('Error during sign out:', error))}
                       className="flex items-center gap-3 px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group w-full text-sm font-medium"
                     >
                       <LogOut className="w-4 h-4" />

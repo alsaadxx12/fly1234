@@ -122,19 +122,19 @@ const SidebarTree: React.FC<SidebarTreeProps> = ({ isCollapsed, onItemClick }) =
         if (activeKey) {
             setSelectedKeys([activeKey]);
             const parents = findParentKeys(treeData, activeKey);
-            setExpandedKeys(prev => Array.from(new Set([...prev, ...parents])));
+            setExpandedKeys((prev: any) => Array.from(new Set([...prev, ...parents])));
         }
     }, [location.pathname, treeData]);
 
-    const onSelect = (keys: React.Key[], info: any) => {
+    const onSelect = (_keys: React.Key[], info: any) => {
         const node = info.node;
         if (node.path) {
             navigate(node.path);
             if (onItemClick) onItemClick();
         } else {
             const key = node.key as string;
-            setExpandedKeys(prev =>
-                prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
+            setExpandedKeys((prev: any) =>
+                prev.includes(key) ? prev.filter((k: any) => k !== key) : [...prev, key]
             );
         }
     };

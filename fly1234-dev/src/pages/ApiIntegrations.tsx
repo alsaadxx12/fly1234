@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs, Timestamp, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import {
@@ -13,12 +13,9 @@ import {
   XCircle,
   Clock,
   Zap,
-  Settings,
   AlertCircle,
   Search,
-  Activity,
-  PlayCircle,
-  PauseCircle
+  Activity
 } from 'lucide-react';
 import ModernModal from '../components/ModernModal';
 import ModernButton from '../components/ModernButton';
@@ -57,7 +54,6 @@ function ApiIntegrations() {
   const [connections, setConnections] = useState<ApiConnection[]>([]);
   const [sources, setSources] = useState<SupplierSource[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingConnection, setEditingConnection] = useState<ApiConnection | null>(null);
@@ -112,7 +108,7 @@ function ApiIntegrations() {
       },
       (error) => {
         console.error('Error loading connections:', error);
-        showNotification('فشل تحميل الاتصالات', 'error');
+        showNotification('error', 'خطأ', 'فشل تحميل الاتصالات');
         setLoading(false);
       }
     );
@@ -162,23 +158,23 @@ function ApiIntegrations() {
       }
     } catch (error) {
       console.error('Error loading sources:', error);
-      showNotification('فشل تحميل قائمة خطوط الطيران', 'error');
+      showNotification('error', 'خطأ', 'فشل تحميل قائمة خطوط الطيران');
     }
   };
 
   const testApiConnection = async () => {
     if (!formData.apiUrl?.trim()) {
-      showNotification('يرجى إدخال رابط API أولاً', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال رابط API أولاً');
       return;
     }
 
     if (formData.apiMethod === 'POST' && (!formData.email?.trim() || !formData.password?.trim())) {
-      showNotification('يرجى إدخال البريد الإلكتروني وكلمة المرور', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
     if (formData.apiMethod === 'GET' && !formData.authToken?.trim()) {
-      showNotification('يرجى إدخال رمز المصادقة (Token)', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال رمز المصادقة (Token)');
       return;
     }
 
@@ -228,17 +224,17 @@ function ApiIntegrations() {
           balanceValue = responseData.wallet.balance;
         }
       } else if (responseData &&
-          (typeof responseData.balance === 'number' ||
-           typeof responseData.amount === 'number' ||
-           typeof responseData.credit === 'number')) {
+        (typeof responseData.balance === 'number' ||
+          typeof responseData.amount === 'number' ||
+          typeof responseData.credit === 'number')) {
         foundBalance = true;
         balanceValue = responseData.balance || responseData.amount || responseData.credit;
       }
 
       if (foundBalance) {
-        showNotification(`✓ الاتصال ناجح! الرصيد الحالي: ${balanceValue.toLocaleString()} ${formData.currency}`, 'success');
+        showNotification('success', 'نجاح', `✓ الاتصال ناجح! الرصيد الحالي: ${balanceValue.toLocaleString()} ${formData.currency}`);
       } else {
-        showNotification('⚠ الاتصال تم لكن لم يتم العثور على رصيد للعملة المحددة. البيانات: ' + JSON.stringify(response.data).substring(0, 200), 'error');
+        showNotification('error', 'خطأ', '⚠ الاتصال تم لكن لم يتم العثور على رصيد للعملة المحددة. البيانات: ' + JSON.stringify(response.data).substring(0, 200));
       }
     } catch (error: any) {
       console.error('Test connection error:', error);
@@ -257,7 +253,7 @@ function ApiIntegrations() {
         errorMessage = error.response.data.message;
       }
 
-      showNotification(errorMessage, 'error');
+      showNotification('error', 'خطأ', errorMessage);
     } finally {
       setTestingConnection(false);
     }
@@ -265,12 +261,12 @@ function ApiIntegrations() {
 
   const exploreApi = async () => {
     if (!formData.apiUrl?.trim()) {
-      showNotification('يرجى إدخال رابط API أولاً', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال رابط API أولاً');
       return;
     }
 
     if (!formData.email?.trim() || !formData.password?.trim()) {
-      showNotification('يرجى إدخال البريد الإلكتروني وكلمة المرور', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال البريد الإلكتروني وكلمة المرور');
       return;
     }
 
@@ -315,9 +311,9 @@ function ApiIntegrations() {
 
         const response = endpoint.method === 'POST'
           ? await axios.post(url, {
-              email: formData.email,
-              password: formData.password
-            }, config)
+            email: formData.email,
+            password: formData.password
+          }, config)
           : await axios.get(url, config);
 
         const result = {
@@ -362,42 +358,42 @@ function ApiIntegrations() {
 
     const successCount = results.filter(r => r.success).length;
     if (successCount > 0) {
-      showNotification(`تم العثور على ${successCount} نقطة نهاية صالحة!`, 'success');
+      showNotification('success', 'نجاح', `تم العثور على ${successCount} نقطة نهاية صالحة!`);
     } else {
-      showNotification('لم يتم العثور على نقاط نهاية صالحة', 'error');
+      showNotification('error', 'خطأ', 'لم يتم العثور على نقاط نهاية صالحة');
     }
   };
 
   const handleAddConnection = async () => {
     if (!formData.name?.trim()) {
-      showNotification('يرجى إدخال اسم الاتصال', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال اسم الاتصال');
       return;
     }
 
     if (!formData.email?.trim()) {
-      showNotification('يرجى إدخال البريد الإلكتروني', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال البريد الإلكتروني');
       return;
     }
 
     if (!formData.password?.trim()) {
-      showNotification('يرجى إدخال كلمة المرور', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال كلمة المرور');
       return;
     }
 
     if (!formData.apiUrl?.trim()) {
-      showNotification('يرجى إدخال رابط API', 'error');
+      showNotification('error', 'خطأ', 'يرجى إدخال رابط API');
       return;
     }
 
     if (!formData.sourceId) {
-      showNotification('يرجى اختيار خط الطيران', 'error');
+      showNotification('error', 'خطأ', 'يرجى اختيار خط الطيران');
       return;
     }
 
     try {
       const source = sources.find(s => s.id === formData.sourceId);
       if (!source) {
-        showNotification('خط الطيران المختار غير موجود', 'error');
+        showNotification('error', 'خطأ', 'خط الطيران المختار غير موجود');
         return;
       }
 
@@ -419,12 +415,12 @@ function ApiIntegrations() {
 
       // Real-time listener will update the state automatically
 
-      showNotification('تم إضافة الاتصال بنجاح', 'success');
+      showNotification('success', 'نجاح', 'تم إضافة الاتصال بنجاح');
       setShowAddModal(false);
       resetForm();
     } catch (error: any) {
       console.error('Error adding connection:', error);
-      showNotification(error.message || 'فشل إضافة الاتصال', 'error');
+      showNotification('error', 'خطأ', error.message || 'فشل إضافة الاتصال');
     }
   };
 
@@ -452,7 +448,7 @@ function ApiIntegrations() {
     try {
       const source = sources.find(s => s.id === formData.sourceId);
       if (!source) {
-        showNotification('المصدر غير موجود', 'error');
+        showNotification('error', 'خطأ', 'المصدر غير موجود');
         return;
       }
 
@@ -471,7 +467,7 @@ function ApiIntegrations() {
         authToken: formData.authToken || ''
       });
 
-      showNotification('تم تحديث الاتصال بنجاح', 'success');
+      showNotification('success', 'نجاح', 'تم تحديث الاتصال بنجاح');
       // Real-time listener will update the state automatically
 
       setShowEditModal(false);
@@ -479,7 +475,7 @@ function ApiIntegrations() {
       resetForm();
     } catch (error) {
       console.error('Error updating connection:', error);
-      showNotification('فشل تحديث الاتصال', 'error');
+      showNotification('error', 'خطأ', 'فشل تحديث الاتصال');
     }
   };
 
@@ -491,139 +487,14 @@ function ApiIntegrations() {
 
       // Real-time listener will update the state automatically
 
-      showNotification('تم حذف الاتصال بنجاح', 'success');
+      showNotification('success', 'نجاح', 'تم حذف الاتصال بنجاح');
     } catch (error) {
       console.error('Error deleting connection:', error);
-      showNotification('فشل حذف الاتصال', 'error');
+      showNotification('error', 'خطأ', 'فشل حذف الاتصال');
     }
   };
 
-  const syncBalance = async (connection: ApiConnection) => {
-    setSyncing(connection.id);
-    try {
-      console.log('Syncing balance for:', connection.name);
-      console.log('API URL:', connection.apiUrl);
-      console.log('Method:', connection.apiMethod || 'POST');
 
-      const config: any = {
-        timeout: 30000,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
-
-      let response;
-
-      if (connection.apiMethod === 'POST') {
-        console.log('Sending POST request with login credentials...');
-        response = await axios.post(connection.apiUrl, {
-          email: connection.email,
-          password: connection.password,
-          type: 'login'
-        }, config);
-      } else {
-        if (connection.authToken) {
-          config.headers['Authorization'] = `Bearer ${connection.authToken}`;
-        }
-        response = await axios.get(connection.apiUrl, config);
-      }
-
-      console.log('API Response:', response.data);
-
-      let balance = 0;
-      const responseData = response.data?.data || response.data;
-
-      if (responseData?.wallets && Array.isArray(responseData.wallets)) {
-        const wallet = responseData.wallets.find((w: any) => w.currency === connection.currency);
-        if (wallet && typeof wallet.balance === 'number') {
-          balance = wallet.balance;
-        } else {
-          throw new Error(`لم يتم العثور على محفظة بعملة ${connection.currency}`);
-        }
-      } else if (responseData?.wallet && typeof responseData.wallet.balance === 'number') {
-        if (responseData.wallet.currency === connection.currency) {
-          balance = responseData.wallet.balance;
-        } else {
-          throw new Error(`المحفظة الرئيسية بعملة ${responseData.wallet.currency} ولكن المطلوب ${connection.currency}`);
-        }
-      } else if (responseData && typeof responseData.balance === 'number') {
-        balance = responseData.balance;
-      } else if (responseData && typeof responseData.amount === 'number') {
-        balance = responseData.amount;
-      } else if (responseData && typeof responseData.credit === 'number') {
-        balance = responseData.credit;
-      } else {
-        throw new Error('تنسيق الاستجابة غير صحيح');
-      }
-
-      const balancesRef = collection(db, 'balances');
-      const balancesSnapshot = await getDocs(balancesRef);
-      const existingBalance = balancesSnapshot.docs.find(
-        doc => doc.data().sourceId === connection.sourceId
-      );
-
-      if (existingBalance) {
-        await updateDoc(doc(db, 'balances', existingBalance.id), {
-          amount: balance,
-          lastUpdated: Timestamp.now(),
-          isAutoSync: true,
-          apiSource: connection.name
-        });
-      } else {
-        await addDoc(collection(db, 'balances'), {
-          sourceId: connection.sourceId,
-          sourceName: connection.sourceName,
-          amount: balance,
-          currency: connection.currency,
-          type: 'airline',
-          lastUpdated: Timestamp.now(),
-          createdAt: Timestamp.now(),
-          isAutoSync: true,
-          apiSource: connection.name
-        });
-      }
-
-      await updateDoc(doc(db, 'api_connections', connection.id), {
-        lastSync: Timestamp.now(),
-        lastSyncStatus: 'success',
-        lastSyncError: null
-      });
-
-      // Real-time listener will update the state automatically
-
-      showNotification('تم تحديث الرصيد بنجاح', 'success');
-    } catch (error: any) {
-      console.error('Error syncing balance:', error);
-
-      let errorMessage = 'فشل مزامنة الرصيد';
-
-      if (error.code === 'ERR_BAD_REQUEST' || error.response?.status === 404) {
-        errorMessage = 'رابط API غير صحيح أو غير موجود (خطأ 404). يرجى التحقق من الرابط.';
-      } else if (error.response?.status === 401 || error.response?.status === 403) {
-        errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة (خطأ في الصلاحيات)';
-      } else if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        errorMessage = 'انتهت مهلة الاتصال. يرجى المحاولة مرة أخرى.';
-      } else if (error.code === 'ERR_NETWORK') {
-        errorMessage = 'خطأ في الشبكة. يرجى التحقق من الاتصال بالإنترنت.';
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      await updateDoc(doc(db, 'api_connections', connection.id), {
-        lastSync: Timestamp.now(),
-        lastSyncStatus: 'error',
-        lastSyncError: errorMessage
-      });
-
-      // Real-time listener will update the state automatically
-
-      showNotification(errorMessage, 'error');
-    } finally {
-      setSyncing(null);
-    }
-  };
 
   const toggleConnectionStatus = async (connection: ApiConnection) => {
     try {
@@ -634,7 +505,7 @@ function ApiIntegrations() {
       // Real-time listener will update the state automatically
     } catch (error) {
       console.error('Error toggling status:', error);
-      showNotification('فشل تغيير حالة الاتصال', 'error');
+      showNotification('error', 'خطأ', 'فشل تغيير حالة الاتصال');
     }
   };
 
@@ -666,13 +537,13 @@ function ApiIntegrations() {
       await apiSyncService.updateGlobalSyncConfig(newState, syncFrequency);
 
       if (newState) {
-        showNotification(`تم تفعيل المزامنة العالمية (كل ${syncFrequency} ثانية)`, 'success');
+        showNotification('success', 'نجاح', `تم تفعيل المزامنة العالمية (كل ${syncFrequency} ثانية)`);
       } else {
-        showNotification('تم إيقاف المزامنة العالمية', 'info');
+        showNotification('info', 'معلومات', 'تم إيقاف المزامنة العالمية');
       }
     } catch (error) {
       console.error('Error updating sync config:', error);
-      showNotification('فشل تحديث إعدادات المزامنة', 'error');
+      showNotification('error', 'خطأ', 'فشل تحديث إعدادات المزامنة');
       setContinuousSyncEnabled(!newState);
     }
   };
@@ -683,10 +554,10 @@ function ApiIntegrations() {
     if (continuousSyncEnabled) {
       try {
         await apiSyncService.updateGlobalSyncConfig(true, newFrequency);
-        showNotification(`تم تحديث فترة المزامنة إلى ${newFrequency} ثانية`, 'success');
+        showNotification('success', 'نجاح', `تم تحديث فترة المزامنة إلى ${newFrequency} ثانية`);
       } catch (error) {
         console.error('Error updating sync frequency:', error);
-        showNotification('فشل تحديث فترة المزامنة', 'error');
+        showNotification('error', 'خطأ', 'فشل تحديث فترة المزامنة');
       }
     }
   };
@@ -694,9 +565,9 @@ function ApiIntegrations() {
   const handleSyncNow = async () => {
     try {
       await apiSyncService.syncNow();
-      showNotification('تمت المزامنة بنجاح', 'success');
+      showNotification('success', 'نجاح', 'تمت المزامنة بنجاح');
     } catch (error) {
-      showNotification('فشلت المزامنة', 'error');
+      showNotification('error', 'خطأ', 'فشلت المزامنة');
     }
   };
 
@@ -742,14 +613,12 @@ function ApiIntegrations() {
               </div>
               <button
                 onClick={toggleContinuousSync}
-                className={`relative w-12 h-6 rounded-full transition-colors ${
-                  continuousSyncEnabled ? 'bg-emerald-500' : 'bg-gray-300'
-                }`}
+                className={`relative w-12 h-6 rounded-full transition-colors ${continuousSyncEnabled ? 'bg-emerald-500' : 'bg-gray-300'
+                  }`}
               >
                 <span
-                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${
-                    continuousSyncEnabled ? 'right-0.5' : 'right-6.5'
-                  }`}
+                  className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${continuousSyncEnabled ? 'right-0.5' : 'right-6.5'
+                    }`}
                 />
               </button>
             </div>
@@ -858,14 +727,12 @@ function ApiIntegrations() {
               <div className="p-5">
                 <div className="flex items-center gap-4">
                   {/* أيقونة الاتصال */}
-                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    connection.isActive
-                      ? 'bg-emerald-100'
-                      : 'bg-gray-100'
-                  }`}>
-                    <LinkIcon className={`w-7 h-7 ${
-                      connection.isActive ? 'text-emerald-600' : 'text-gray-400'
-                    }`} />
+                  <div className={`w-14 h-14 rounded-lg flex items-center justify-center flex-shrink-0 ${connection.isActive
+                    ? 'bg-emerald-100'
+                    : 'bg-gray-100'
+                    }`}>
+                    <LinkIcon className={`w-7 h-7 ${connection.isActive ? 'text-emerald-600' : 'text-gray-400'
+                      }`} />
                   </div>
 
                   <div className="flex-1 min-w-0">
@@ -876,11 +743,10 @@ function ApiIntegrations() {
                         <span className="text-sm text-gray-600">•</span>
                         <p className="text-sm font-medium text-gray-600 truncate">{connection.sourceName}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                        connection.isActive
-                          ? 'bg-emerald-100 text-emerald-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${connection.isActive
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-600'
+                        }`}>
                         {connection.isActive ? 'نشط' : 'متوقف'}
                       </span>
                     </div>
@@ -911,27 +777,24 @@ function ApiIntegrations() {
                         </div>
                       </div>
 
-                      <div className={`border rounded-lg px-3 py-2 ${
-                        connection.currency === 'IQD'
-                          ? 'bg-teal-50 border-teal-200'
-                          : connection.currency === 'USD'
+                      <div className={`border rounded-lg px-3 py-2 ${connection.currency === 'IQD'
+                        ? 'bg-teal-50 border-teal-200'
+                        : connection.currency === 'USD'
                           ? 'bg-green-50 border-green-200'
                           : 'bg-amber-50 border-amber-200'
-                      }`}>
-                        <p className={`text-[10px] font-bold mb-1 ${
-                          connection.currency === 'IQD'
-                            ? 'text-teal-700'
-                            : connection.currency === 'USD'
+                        }`}>
+                        <p className={`text-[10px] font-bold mb-1 ${connection.currency === 'IQD'
+                          ? 'text-teal-700'
+                          : connection.currency === 'USD'
                             ? 'text-green-700'
                             : 'text-amber-700'
-                        }`}>العملة</p>
-                        <p className={`text-sm font-black ${
-                          connection.currency === 'IQD'
-                            ? 'text-teal-900'
-                            : connection.currency === 'USD'
+                          }`}>العملة</p>
+                        <p className={`text-sm font-black ${connection.currency === 'IQD'
+                          ? 'text-teal-900'
+                          : connection.currency === 'USD'
                             ? 'text-green-900'
                             : 'text-amber-900'
-                        }`}>{connection.currency}</p>
+                          }`}>{connection.currency}</p>
                       </div>
 
                       {connection.lastSync && (
@@ -965,11 +828,10 @@ function ApiIntegrations() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <button
                         onClick={() => toggleConnectionStatus(connection)}
-                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
-                          connection.isActive
-                            ? 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
-                        }`}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${connection.isActive
+                          ? 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100'
+                          }`}
                       >
                         {connection.isActive ? 'تعطيل' : 'تفعيل'}
                       </button>
@@ -1070,11 +932,10 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, apiMethod: 'POST' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.apiMethod === 'POST'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.apiMethod === 'POST'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">POST</p>
                 <p className="text-xs mt-1">مع بيانات الدخول</p>
@@ -1082,11 +943,10 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, apiMethod: 'GET' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.apiMethod === 'GET'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.apiMethod === 'GET'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">GET</p>
                 <p className="text-xs mt-1">مع Token</p>
@@ -1141,7 +1001,7 @@ function ApiIntegrations() {
                   : 'تنسيق الاستجابة المتوقع:'}
               </p>
               <pre className="text-xs text-gray-700 bg-white p-2 rounded border border-gray-200 overflow-x-auto">
-{formData.apiMethod === 'POST' ? `{
+                {formData.apiMethod === 'POST' ? `{
   "data": {
     "token": "eyJhbGc...",
     "wallet": {
@@ -1212,33 +1072,30 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'IQD' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'IQD'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'IQD'
+                  ? 'border-teal-500 bg-teal-50 text-teal-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">دينار عراقي</p>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'USD' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'USD'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'USD'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">دولار أمريكي</p>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'AED' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'AED'
-                    ? 'border-amber-500 bg-amber-50 text-amber-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'AED'
+                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">درهم إماراتي</p>
               </button>
@@ -1250,14 +1107,12 @@ function ApiIntegrations() {
             <button
               type="button"
               onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-              className={`relative w-14 h-7 rounded-full transition-colors ${
-                formData.isActive ? 'bg-green-500' : 'bg-gray-300'
-              }`}
+              className={`relative w-14 h-7 rounded-full transition-colors ${formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                  formData.isActive ? 'right-1' : 'right-8'
-                }`}
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${formData.isActive ? 'right-1' : 'right-8'
+                  }`}
               />
             </button>
           </div>
@@ -1267,14 +1122,12 @@ function ApiIntegrations() {
             <button
               type="button"
               onClick={() => setFormData({ ...formData, autoSync: !formData.autoSync })}
-              className={`relative w-14 h-7 rounded-full transition-colors ${
-                formData.autoSync ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
+              className={`relative w-14 h-7 rounded-full transition-colors ${formData.autoSync ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                  formData.autoSync ? 'right-1' : 'right-8'
-                }`}
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${formData.autoSync ? 'right-1' : 'right-8'
+                  }`}
               />
             </button>
           </div>
@@ -1365,11 +1218,10 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, apiMethod: 'POST' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.apiMethod === 'POST'
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.apiMethod === 'POST'
+                  ? 'border-blue-500 bg-blue-50 text-blue-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">POST</p>
                 <p className="text-xs mt-1">مع بيانات الدخول</p>
@@ -1377,11 +1229,10 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, apiMethod: 'GET' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.apiMethod === 'GET'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.apiMethod === 'GET'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">GET</p>
                 <p className="text-xs mt-1">مع Token</p>
@@ -1436,7 +1287,7 @@ function ApiIntegrations() {
                   : 'تنسيق الاستجابة المتوقع:'}
               </p>
               <pre className="text-xs text-gray-700 bg-white p-2 rounded border border-gray-200 overflow-x-auto">
-{formData.apiMethod === 'POST' ? `{
+                {formData.apiMethod === 'POST' ? `{
   "data": {
     "token": "eyJhbGc...",
     "wallet": {
@@ -1507,33 +1358,30 @@ function ApiIntegrations() {
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'IQD' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'IQD'
-                    ? 'border-teal-500 bg-teal-50 text-teal-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'IQD'
+                  ? 'border-teal-500 bg-teal-50 text-teal-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">دينار عراقي</p>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'USD' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'USD'
-                    ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'USD'
+                  ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">دولار أمريكي</p>
               </button>
               <button
                 type="button"
                 onClick={() => setFormData({ ...formData, currency: 'AED' })}
-                className={`p-3 rounded-xl border-2 transition-all ${
-                  formData.currency === 'AED'
-                    ? 'border-amber-500 bg-amber-50 text-amber-700'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`p-3 rounded-xl border-2 transition-all ${formData.currency === 'AED'
+                  ? 'border-amber-500 bg-amber-50 text-amber-700'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <p className="font-bold text-sm">درهم إماراتي</p>
               </button>
@@ -1545,14 +1393,12 @@ function ApiIntegrations() {
             <button
               type="button"
               onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
-              className={`relative w-14 h-7 rounded-full transition-colors ${
-                formData.isActive ? 'bg-green-500' : 'bg-gray-300'
-              }`}
+              className={`relative w-14 h-7 rounded-full transition-colors ${formData.isActive ? 'bg-green-500' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                  formData.isActive ? 'right-1' : 'right-8'
-                }`}
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${formData.isActive ? 'right-1' : 'right-8'
+                  }`}
               />
             </button>
           </div>
@@ -1562,14 +1408,12 @@ function ApiIntegrations() {
             <button
               type="button"
               onClick={() => setFormData({ ...formData, autoSync: !formData.autoSync })}
-              className={`relative w-14 h-7 rounded-full transition-colors ${
-                formData.autoSync ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
+              className={`relative w-14 h-7 rounded-full transition-colors ${formData.autoSync ? 'bg-blue-500' : 'bg-gray-300'
+                }`}
             >
               <span
-                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                  formData.autoSync ? 'right-1' : 'right-8'
-                }`}
+                className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${formData.autoSync ? 'right-1' : 'right-8'
+                  }`}
               />
             </button>
           </div>
@@ -1627,11 +1471,10 @@ function ApiIntegrations() {
               {explorationResults.map((result, index) => (
                 <div
                   key={index}
-                  className={`border-2 rounded-xl p-4 ${
-                    result.success
-                      ? 'border-green-300 bg-green-50'
-                      : 'border-gray-200 bg-gray-50'
-                  }`}
+                  className={`border-2 rounded-xl p-4 ${result.success
+                    ? 'border-green-300 bg-green-50'
+                    : 'border-gray-200 bg-gray-50'
+                    }`}
                 >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
@@ -1647,11 +1490,10 @@ function ApiIntegrations() {
                         {result.method} {result.endpoint}
                       </code>
                     </div>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                      result.success
-                        ? 'bg-green-200 text-green-800'
-                        : 'bg-gray-200 text-gray-600'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${result.success
+                      ? 'bg-green-200 text-green-800'
+                      : 'bg-gray-200 text-gray-600'
+                      }`}>
                       {result.status}
                     </span>
                   </div>
@@ -1669,25 +1511,25 @@ function ApiIntegrations() {
                           data.wallets ||
                           data.amount !== undefined ||
                           data.credit !== undefined) && (
-                          <div className="mt-2 bg-yellow-100 border border-yellow-300 rounded p-2">
-                            <p className="text-xs font-bold text-yellow-800 flex items-center gap-1">
-                              <AlertCircle className="w-4 h-4" />
-                              يمكن استخدام هذا Endpoint!
-                            </p>
-                            {data.wallets && (
-                              <p className="text-xs text-yellow-700 mt-1">
-                                يحتوي على محافظ متعددة - مثالي لتعدد العملات
+                            <div className="mt-2 bg-yellow-100 border border-yellow-300 rounded p-2">
+                              <p className="text-xs font-bold text-yellow-800 flex items-center gap-1">
+                                <AlertCircle className="w-4 h-4" />
+                                يمكن استخدام هذا Endpoint!
                               </p>
-                            )}
-                          </div>
-                        );
+                              {data.wallets && (
+                                <p className="text-xs text-yellow-700 mt-1">
+                                  يحتوي على محافظ متعددة - مثالي لتعدد العملات
+                                </p>
+                              )}
+                            </div>
+                          );
                       })()}
 
                       {result.data.token && (
                         <button
                           onClick={() => {
                             setFormData({ ...formData, authToken: result.data.token, apiMethod: 'GET' });
-                            showNotification('تم نسخ Token تلقائياً!', 'success');
+                            showNotification('success', 'نجاح', 'تم نسخ Token تلقائياً!');
                           }}
                           className="mt-2 w-full px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-medium"
                         >
