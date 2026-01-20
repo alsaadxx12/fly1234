@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import './pages/Accounts/styles/accounts.css';
+import { registerSW } from './pwa';
+
+registerSW();
 
 // This script will run as soon as the HTML is parsed.
 const blockingThemeScript = `
