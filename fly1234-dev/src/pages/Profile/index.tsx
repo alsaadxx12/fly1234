@@ -1,15 +1,13 @@
-import React from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useTheme } from '../../contexts/ThemeContext';
 import ProfileHeader from './components/ProfileHeader';
 import ProfileStats from './components/ProfileStats';
 import ProfileDocuments from './components/ProfileDocuments';
 import ProfileAttendance from './components/ProfileAttendance';
+import ProfileLeaves from './components/ProfileLeaves';
 import { Loader2 } from 'lucide-react';
 
 export default function ProfileContent() {
   const { employee, loading } = useAuth();
-  const { theme } = useTheme();
 
   if (loading || !employee) {
     return (
@@ -26,6 +24,7 @@ export default function ProfileContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ProfileDocuments employee={employee} />
         <ProfileAttendance employeeId={employee.id!} />
+        <ProfileLeaves employeeId={employee.id!} />
       </div>
     </div>
   );

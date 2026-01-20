@@ -9,6 +9,8 @@ import { getDepartments, Department } from '../../lib/collections/departments';
 import { getEmployees, Employee } from '../../lib/collections/employees';
 import { AttendanceRecord } from '../Attendance/types';
 import { getShiftTimings } from '../../utils/helpers';
+import { getAllLeaves } from '../../lib/collections/leaves';
+import { LeaveRequest } from '../Leaves/types';
 import * as XLSX from 'xlsx';
 
 const AttendanceReportsContent: React.FC = () => {
@@ -20,6 +22,7 @@ const AttendanceReportsContent: React.FC = () => {
   const [records, setRecords] = useState<AttendanceRecord[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [leaves, setLeaves] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,14 +31,16 @@ const AttendanceReportsContent: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const [recordsData, employeesData, departmentsData] = await Promise.all([
+        const [recordsData, employeesData, departmentsData, leavesData] = await Promise.all([
           getAllAttendanceRecords(),
           getEmployees(),
           getDepartments(),
+          getAllLeaves()
         ]);
         setRecords(recordsData);
         setEmployees(employeesData);
         setDepartments(departmentsData);
+        setLeaves(leavesData || []);
       } catch (err) {
         setError('فشل في تحميل البيانات');
         console.error(err);
@@ -56,15 +61,32 @@ const AttendanceReportsContent: React.FC = () => {
           ...record,
           lateMinutes: 0,
           overtimeMinutes: 0,
-          netPoints: 0
+          netPoints: 0,
+          salaryDeductionDays: 0,
+          isAbsent: false
         };
       }
 
       const shiftTimings = getShiftTimings(employee);
       const isExempt = employee.id ? department.exemptEmployeeIds?.includes(employee.id) : false;
+      const recordDate = record.checkInTime.toISOString().split('T')[0];
+
+      // Check for approved leaves on this day
+      const dayLeaves = leaves.filter(l =>
+        l.employeeId === record.employeeId &&
+        l.status === 'approved' &&
+        (
+          (l.type === 'full_day' && l.startDate && l.endDate &&
+            record.checkInTime >= l.startDate && record.checkInTime <= l.endDate) ||
+          (l.type === 'time' && l.date && l.date.toISOString().split('T')[0] === recordDate)
+        )
+      );
+
+      const hasFullDayLeave = dayLeaves.some(l => l.type === 'full_day');
+      const hasTimeLeave = dayLeaves.some(l => l.type === 'time');
 
       let lateMinutes = 0;
-      if (!isExempt && shiftTimings.start && record.checkInTime > shiftTimings.start) {
+      if (!isExempt && !hasTimeLeave && shiftTimings.start && record.checkInTime > shiftTimings.start) {
         const rawLateMinutes = Math.round((record.checkInTime.getTime() - shiftTimings.start.getTime()) / 60000);
         const gracePeriod = department.attendanceGracePeriod || 0;
         lateMinutes = Math.max(0, rawLateMinutes - gracePeriod);
@@ -75,18 +97,34 @@ const AttendanceReportsContent: React.FC = () => {
         overtimeMinutes = Math.round((record.checkOutTime.getTime() - shiftTimings.end.getTime()) / 60000);
       }
 
+      // Absence policy: exceeding limit or full-day leave
+      // Full-day leave = 1 day salary deduction, 0 points impact
+      // Lateness > absence limit = 1 day salary deduction, points might still apply or not
+      const absenceLimit = department.absenceLimitMinutes || 480; // Default to 8 hours if not set
+      const isLateAbsent = lateMinutes > absenceLimit;
+      const isAbsent = isLateAbsent || hasFullDayLeave;
+
+      let salaryDeductionDays = 0;
+      if (hasFullDayLeave) salaryDeductionDays = 1;
+      else if (isLateAbsent) salaryDeductionDays = 1;
+
       const overtimePoints = overtimeMinutes * (department.overtimePointsPerMinute || 0);
-      const lateDeductionPoints = isExempt ? 0 : lateMinutes * (department.lateDeductionPointsPerMinute || 0);
+      // If absent, maybe points shouldn't be deducted further? Or they should. Let's stick to points for lateness unless absent.
+      const lateDeductionPoints = (isExempt || hasTimeLeave || hasFullDayLeave) ? 0 : lateMinutes * (department.lateDeductionPointsPerMinute || 0);
       const netPoints = overtimePoints - lateDeductionPoints;
 
       return {
         ...record,
-        lateMinutes: isExempt ? 0 : lateMinutes,
+        lateMinutes: (isExempt || hasTimeLeave) ? 0 : lateMinutes,
         overtimeMinutes,
-        netPoints
+        netPoints,
+        salaryDeductionDays,
+        isAbsent,
+        hasFullDayLeave,
+        hasTimeLeave
       };
     });
-  }, [records, employees, departments]);
+  }, [records, employees, departments, leaves]);
 
   const handleClearHistory = async () => {
     setIsClearing(true);
@@ -111,6 +149,8 @@ const AttendanceReportsContent: React.FC = () => {
       'وقت الانصراف': record.checkOutTime ? record.checkOutTime.toLocaleString('ar-EG') : 'لم يسجل خروج',
       'وقت التأخير (د)': record.lateMinutes,
       'وقت إضافي (د)': record.overtimeMinutes,
+      'بخصم راتب (يوم)': record.salaryDeductionDays,
+      'الحالة': record.isAbsent ? 'غائب/متأخر' : 'حاضر',
       'صافي النقاط': record.netPoints.toFixed(2),
     }));
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ExchangeRateProvider } from './contexts/ExchangeRateContext';
@@ -34,6 +34,7 @@ const Branches = lazy(() => import('./pages/Branches'));
 const Departments = lazy(() => import('./pages/Departments'));
 const Reports = lazy(() => import('./pages/Reports'));
 const ProfilePage = lazy(() => import('./pages/Profile'));
+const Leaves = lazy(() => import('./pages/Leaves'));
 
 const LoadingFallback = () => {
   const { theme } = useTheme();
@@ -52,13 +53,8 @@ const LoadingFallback = () => {
 
 function AppRoutes() {
   const { user, loading } = useAuth();
-  const [aiApiKey, setAiApiKey] = useState<string>('');
 
   useEffect(() => {
-    const storedKey = localStorage.getItem('openai_api_key');
-    if (storedKey) {
-      setAiApiKey(storedKey);
-    }
     checkAndCalculateEmployeeOfTheMonth();
   }, []);
 
@@ -110,6 +106,7 @@ function AppRoutes() {
                       <Route path="/attendance" element={<PermissionGuard requiredPermissions={{ page: 'تسجيل الحضور', actions: ['view'] }}><Attendance /></PermissionGuard>} />
                       <Route path="/attendance-reports" element={<PermissionGuard requiredPermissions={{ page: 'تقارير الحضور', actions: ['view'] }}><AttendanceReports /></PermissionGuard>} />
                       <Route path="/branches" element={<PermissionGuard requiredPermissions={{ page: 'الفروع', actions: ['view'] }}><Branches /></PermissionGuard>} />
+                      <Route path="/leaves" element={<Leaves />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Suspense>

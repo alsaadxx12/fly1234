@@ -7,11 +7,8 @@ import {
   Settings,
   LayoutDashboard,
   Link as LinkIcon,
-  Plane,
   DollarSign,
   CheckSquare,
-  TrendingUp,
-  FileText as Visa,
   AlertTriangle,
   CreditCard,
   MapPin,
@@ -54,6 +51,11 @@ export const menuItems = [
         path: '/attendance-reports',
         icon: FileClock,
         textKey: 'تقارير الحضور',
+      },
+      {
+        path: '/leaves',
+        icon: CheckSquare,
+        textKey: 'الإجازات',
       },
     ]
   },
@@ -120,7 +122,7 @@ export const menuItems = [
     textKey: 'الإعدادات والربط',
     icon: Settings,
     subItems: [
-       {
+      {
         path: '/settings',
         icon: Settings,
         textKey: 'settings',

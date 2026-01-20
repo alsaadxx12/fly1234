@@ -16,6 +16,7 @@ export interface Department {
   salaryIncrementAmount?: number;
   salaryIncrementPeriodMonths?: number;
   attendanceGracePeriod?: number;
+  absenceLimitMinutes?: number;
   exemptEmployeeIds?: string[];
 }
 

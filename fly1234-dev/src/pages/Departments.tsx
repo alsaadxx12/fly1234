@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useTheme } from '../contexts/ThemeContext';
 import { collection, query, onSnapshot, doc, addDoc, updateDoc, deleteDoc, serverTimestamp, getDocs, orderBy, where } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Plus, Edit, Trash2, UserCheck, Gift, Clock, Sparkles, MapPin, ShieldCheck, ShieldOff } from 'lucide-react';
@@ -20,6 +19,7 @@ interface Department {
   salaryIncrementAmount?: number;
   salaryIncrementPeriodMonths?: number;
   attendanceGracePeriod?: number;
+  absenceLimitMinutes?: number;
   exemptEmployeeIds?: string[];
 }
 
@@ -40,7 +40,6 @@ interface Branch {
 }
 
 export default function Departments() {
-  const { theme } = useTheme();
   const [departments, setDepartments] = useState<Department[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [branches, setBranches] = useState<Branch[]>([]);
@@ -136,6 +135,7 @@ export default function Departments() {
         salaryIncrementAmount: 0,
         salaryIncrementPeriodMonths: 0,
         attendanceGracePeriod: 0,
+        absenceLimitMinutes: 0,
         exemptEmployeeIds: []
       });
     }
@@ -200,6 +200,7 @@ export default function Departments() {
       case 'salaryIncrementAmount': return 'مبلغ الزيادة';
       case 'salaryIncrementPeriodMonths': return 'فترة الزيادة (أشهر)';
       case 'attendanceGracePeriod': return 'فترة السماح (دقائق)';
+      case 'absenceLimitMinutes': return 'حد التغيب (دقائق بعد الموعد)';
       default: return '';
     }
   };
@@ -328,6 +329,13 @@ export default function Departments() {
                     >
                       <span className="text-[10px] font-bold text-gray-500">سماح الحضور:</span>
                       <span className="text-[10px] font-black text-blue-600 dark:text-blue-400">{dep.attendanceGracePeriod || 0} د</span>
+                    </div>
+                    <div
+                      className="flex items-center gap-1.5 px-2 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-lg cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+                      onClick={() => openEditValueModal(dep, 'absenceLimitMinutes')}
+                    >
+                      <span className="text-[10px] font-bold text-gray-500">حد الغياب:</span>
+                      <span className="text-[10px] font-black text-rose-600 dark:text-rose-400">{dep.absenceLimitMinutes || 0} د</span>
                     </div>
                   </div>
 

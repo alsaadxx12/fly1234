@@ -20,6 +20,9 @@ import useIssues from '../hooks/useIssues';
 import useMastercardIssues from '../pages/MastercardIssues/hooks/useMastercardIssues';
 
 import { useNotifications } from '../hooks/useNotifications';
+import { subscribeToLeaves } from '../lib/collections/leaves';
+import { LeaveRequest } from '../pages/Leaves/types';
+import { ClipboardList } from 'lucide-react';
 
 const NOTIFICATION_SOUNDS = [
   { id: 'notification_high_pitch_alert', url: 'https://actions.google.com/sounds/v1/office/notification_high_pitch_alert.ogg' },
@@ -91,10 +94,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   });
   const { issues } = useIssues();
   const { issues: mastercardIssues } = useMastercardIssues();
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [isIssuesPopoverOpen, setIsIssuesPopoverOpen] = useState(false);
   const pendingIssues = issues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
   const pendingMastercardIssues = mastercardIssues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
-  const allPendingIssues = [...pendingIssues, ...pendingMastercardIssues];
+  const pendingLeaves = leaveRequests.filter(leave => leave.status === 'pending');
+  const allPendingIssues = [...pendingIssues, ...pendingMastercardIssues, ...pendingLeaves];
   const [departmentName, setDepartmentName] = useState('');
 
   useEffect(() => {
@@ -203,9 +208,46 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     }
   }, [user?.uid, fetchWhatsAppAccount]);
 
+  const prevLeaveRequestsCount = useRef(0);
+
   useEffect(() => {
     loadWhatsAppAccounts();
-  }, [user?.uid, loadWhatsAppAccounts]);
+
+    // Subscribe to leaves if manager
+    let unsubscribeLeaves: () => void;
+    if (user?.role === 'admin' || user?.role === 'manager') {
+      unsubscribeLeaves = subscribeToLeaves((leaves) => {
+        // Detect new requests
+        const pendingCount = leaves.filter(l => l.status === 'pending').length;
+        if (pendingCount > prevLeaveRequestsCount.current) {
+          const newRequest = leaves.find(l => l.status === 'pending' && !leaveRequests.find(old => old.id === l.id));
+          if (newRequest) {
+            showNotification(
+              'info',
+              'طلب إجازة جديد',
+              `قدم ${newRequest.employeeName} طلب إجازة (${newRequest.type === 'full_day' ? 'كاملة' : 'زمنية'})`,
+              10000
+            );
+
+            // Browser notification
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('طلب إجازة جديد', {
+                body: `${newRequest.employeeName}: ${newRequest.reason}`,
+                icon: '/favicon.ico',
+                tag: 'leave-request'
+              });
+            }
+          }
+        }
+        prevLeaveRequestsCount.current = pendingCount;
+        setLeaveRequests(leaves);
+      });
+    }
+
+    return () => {
+      if (unsubscribeLeaves) unsubscribeLeaves();
+    };
+  }, [user?.uid, user?.role, loadWhatsAppAccounts, leaveRequests.length]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -445,8 +487,11 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                           <div className="flex flex-col items-center gap-3">
                             {allPendingIssues.map((issue: any) => {
                               const isMastercardIssue = 'refundAmount' in issue;
-                              const linkTo = isMastercardIssue ? "/mastercard-issues" : "/pending-issues";
-                              const priority = priorityConfig[issue.priority as keyof typeof priorityConfig] || priorityConfig.low;
+                              const isLeaveRequest = 'type' in issue && 'status' in issue && !('title' in issue);
+                              const linkTo = isLeaveRequest ? "/leaves" : (isMastercardIssue ? "/mastercard-issues" : "/pending-issues");
+                              const priority = isLeaveRequest
+                                ? { label: 'إجازة', icon: <ClipboardList className="w-4 h-4" />, color: 'bg-indigo-500/10 text-indigo-500' }
+                                : (priorityConfig[issue.priority as keyof typeof priorityConfig] || priorityConfig.low);
 
                               return (
                                 <Link
@@ -459,22 +504,23 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                     }`}
                                 >
                                   <div className="flex items-start gap-3">
-                                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${isMastercardIssue
-                                      ? 'bg-purple-500/10 border-purple-500/10 text-purple-500'
-                                      : 'bg-blue-500/10 border-blue-500/10 text-blue-500'
+                                    <div className={`shrink-0 w-8 h-8 rounded-lg flex items-center justify-center border ${isLeaveRequest ? 'bg-indigo-500/10 border-indigo-500/10 text-indigo-500' :
+                                      isMastercardIssue ? 'bg-purple-500/10 border-purple-500/10 text-purple-500' :
+                                        'bg-blue-500/10 border-blue-500/10 text-blue-500'
                                       }`}>
-                                      {isMastercardIssue ? <CreditCard className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                                      {isLeaveRequest ? <ClipboardList className="w-4 h-4" /> :
+                                        isMastercardIssue ? <CreditCard className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                                     </div>
 
                                     <div className="flex-1 min-w-0">
                                       <h4 className="font-black text-[11px] truncate pr-1 tracking-tight mb-0.5">
-                                        {issue.title}
+                                        {isLeaveRequest ? `طلب إجازة: ${issue.employeeName}` : issue.title}
                                       </h4>
                                       <p className="text-[9px] font-bold opacity-40 line-clamp-1 mb-2">
-                                        {issue.description || 'بلا وصف'}
+                                        {isLeaveRequest ? issue.reason : (issue.description || 'بلا وصف')}
                                       </p>
                                       <div className="flex items-center justify-between text-[8px] font-bold opacity-50">
-                                        <span className="truncate max-w-[80px]">{issue.createdByName}</span>
+                                        <span className="truncate max-w-[80px]">{isLeaveRequest ? issue.departmentName : issue.createdByName}</span>
                                         <div className={`px-1.5 py-0.5 rounded-md border ${priority.color.replace('text-', 'border-')}`}>
                                           {priority.label}
                                         </div>
