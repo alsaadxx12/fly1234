@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import SidebarTree from './SidebarTree';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -13,8 +14,7 @@ import {
   Sun,
   Moon,
   ChevronRight,
-  ChevronsLeft,
-  ChevronDown
+  ChevronsLeft
 } from 'lucide-react';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { auth } from '../lib/firebase';
@@ -40,28 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar, isColla
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [passwordSuccess, setPasswordSuccess] = useState<string | null>(null);
-  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set());
 
-  const toggleGroup = (groupKey: string) => {
-    setOpenGroups(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(groupKey)) {
-        newSet.delete(groupKey);
-      } else {
-        newSet.add(groupKey);
-      }
-      return newSet;
-    });
-  };
-
-  useEffect(() => {
-    const activeGroup = menuItems.find(item =>
-      (item as any).subItems?.some((subItem: any) => location.pathname.startsWith(subItem.path))
-    );
-    if (activeGroup) {
-      setOpenGroups(prev => new Set(prev).add((activeGroup as any).textKey));
-    }
-  }, [location.pathname]);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,151 +154,38 @@ const Sidebar: React.FC<SidebarProps> = ({ isSidebarOpen, toggleSidebar, isColla
 
         <ScrollArea.Root className="flex-1 overflow-hidden">
           <ScrollArea.Viewport className="h-full w-full">
-            <nav className={`${isCollapsed ? 'p-2' : 'p-4'} space-y-2`}>
-              {visibleMenuItems.map((item: any) => {
-                if (item.subItems) {
-                  const isGroupOpen = openGroups.has(item.textKey);
-                  const isGroupActive = item.subItems.some((subItem: any) => location.pathname.startsWith(subItem.path));
+            <nav className={`${isCollapsed ? 'p-2' : 'pt-2'} space-y-2`}>
+              {isCollapsed ? (
+                // Collapsed View (Icon Only) - Existing Logic adapted
+                visibleMenuItems.map((item: any) => {
+                  const isActive = location.pathname === item.path || (item.subItems && item.subItems.some((sub: any) => location.pathname.startsWith(sub.path)));
                   const Icon = item.icon;
 
                   return (
-                    <div key={item.textKey}>
-                      <button
-                        onClick={() => toggleGroup(item.textKey)}
-                        className={`group relative flex items-center w-full ${isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3'
-                          } rounded-xl transition-all duration-300 transform hover:scale-105 ${isGroupActive && !isGroupOpen
-                            ? theme === 'dark'
-                              ? 'bg-gray-800 text-white shadow-lg'
-                              : 'bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 shadow-md border border-indigo-200'
-                            : theme === 'dark'
-                              ? 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-md'
-                              : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 hover:shadow-sm'
+                    <div key={item.textKey} className="flex justify-center py-2">
+                      <Link
+                        to={item.path || (item.subItems ? item.subItems[0].path : '#')}
+                        className={`group relative flex items-center justify-center p-3 rounded-xl transition-all duration-300 transform hover:scale-105 ${isActive
+                          ? theme === 'dark'
+                            ? 'bg-gray-800 text-white shadow-lg'
+                            : 'bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 shadow-md border border-indigo-200'
+                          : theme === 'dark'
+                            ? 'text-gray-300 hover:bg-gray-800/50 hover:text-white'
+                            : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600'
                           }`}
+                        title={t(item.textKey)}
                       >
-                        <div
-                          className={`relative ${isCollapsed ? 'p-2' : 'p-2'
-                            } rounded-lg transition-all duration-300 ${isGroupActive
-                              ? theme === 'dark'
-                                ? 'bg-white/20 shadow-inner'
-                                : 'bg-gradient-to-br from-indigo-500 to-blue-500 shadow-md'
-                              : `${item.iconBg || 'bg-gray-100 dark:bg-gray-700'} group-hover:scale-110 group-hover:rotate-6`
-                            }`}
-                        >
-                          <Icon
-                            className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
-                              } transition-all duration-300 ${isGroupActive
-                                ? 'text-white'
-                                : theme === 'dark'
-                                  ? item.iconColor || 'text-gray-300'
-                                  : item.iconColor || 'text-gray-700'
-                              } group-hover:rotate-12`}
-                          />
+                        <div className={`relative ${isActive ? theme === 'dark' ? 'bg-white/20' : 'bg-gradient-to-br from-indigo-500 to-blue-500 text-white' : ''} p-1 rounded-lg`}>
+                          <Icon className={`w-5 h-5 ${isActive ? 'text-white' : ''}`} />
                         </div>
-                        {!isCollapsed && (
-                          <>
-                            <span className={`flex-1 font-semibold text-sm text-right`}>
-                              {t(item.textKey)}
-                            </span>
-                            <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${isGroupOpen ? 'rotate-180' : ''}`} />
-                          </>
-                        )}
-                      </button>
-                      {isGroupOpen && !isCollapsed && (
-                        <div className="mt-1 space-y-1 pr-6 pl-2 animate-in fade-in slide-in-from-top-2 duration-300">
-                          {item.subItems.filter((subItem: any) => checkPermission(subItem.path.substring(1), 'view')).map((subItem: any) => {
-                            const isSubItemActive = location.pathname.startsWith(subItem.path);
-                            const SubIcon = subItem.icon;
-                            return (
-                              <Link
-                                key={subItem.path}
-                                to={subItem.path}
-                                onClick={() => isMobile && toggleSidebar()}
-                                className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 ${isSubItemActive
-                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-bold'
-                                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 font-medium'
-                                  }`}
-                              >
-                                <SubIcon className={`w-4 h-4 transition-all ${isSubItemActive ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-500 dark:group-hover:text-gray-300'}`} />
-                                <span>{t(subItem.textKey)}</span>
-                              </Link>
-                            );
-                          })}
-                        </div>
-                      )}
+                      </Link>
                     </div>
                   );
-                }
-
-                const isActive = location.pathname === item.path;
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.textKey}
-                    to={item.path}
-                    onClick={() => isMobile && toggleSidebar()}
-                    className={`group relative flex items-center ${isCollapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3'
-                      } rounded-xl transition-all duration-300 transform hover:scale-105 ${isActive
-                        ? theme === 'dark'
-                          ? 'bg-gray-800 text-white shadow-lg'
-                          : 'bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 shadow-md border border-indigo-200'
-                        : theme === 'dark'
-                          ? 'text-gray-300 hover:bg-gray-800/50 hover:text-white hover:shadow-md'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-indigo-600 hover:shadow-sm'
-                      }`}
-                    title={isCollapsed ? t(item.textKey) : undefined}
-                  >
-                    {isActive && theme === 'light' && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-indigo-100/50 to-blue-100/50 rounded-xl animate-pulse"></div>
-                    )}
-                    {isActive && theme === 'dark' && (
-                      <div className="absolute inset-0 bg-white/10 rounded-xl animate-pulse"></div>
-                    )}
-
-                    <div
-                      className={`relative ${isCollapsed ? 'p-2' : 'p-2'
-                        } rounded-lg transition-all duration-300 ${isActive
-                          ? theme === 'dark'
-                            ? 'bg-white/20 shadow-inner'
-                            : 'bg-gradient-to-br from-indigo-500 to-blue-500 shadow-md'
-                          : `${item.iconBg || 'bg-gray-100 dark:bg-gray-700'} group-hover:scale-110 group-hover:rotate-6`
-                        }`}
-                    >
-                      <Icon
-                        className={`${isCollapsed ? 'w-5 h-5' : 'w-4 h-4'
-                          } transition-all duration-300 ${isActive
-                            ? 'text-white'
-                            : theme === 'dark'
-                              ? item.iconColor || 'text-gray-300'
-                              : item.iconColor || 'text-gray-700'
-                          } group-hover:rotate-12`}
-                      />
-                    </div>
-
-                    {!isCollapsed && (
-                      <>
-                        <span
-                          className={`flex-1 font-semibold text-sm ${isActive
-                            ? theme === 'dark'
-                              ? 'text-white'
-                              : 'text-indigo-700'
-                            : ''
-                            }`}
-                        >
-                          {t(item.textKey)}
-                        </span>
-
-                        {isActive && (
-                          <ChevronRight
-                            className={`w-3.5 h-3.5 ${theme === 'dark' ? 'text-white/70' : 'text-indigo-500'
-                              }`}
-                          />
-                        )}
-                      </>
-                    )}
-                  </Link>
-                );
-              })}
+                })
+              ) : (
+                // Tree View (Expanded)
+                <SidebarTree isCollapsed={isCollapsed} onItemClick={isMobile ? toggleSidebar : undefined} />
+              )}
             </nav>
           </ScrollArea.Viewport>
 
