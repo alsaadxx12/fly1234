@@ -22,6 +22,7 @@ export interface MastercardIssue {
   refundAmount?: number;
   refundCurrency?: 'USD' | 'IQD';
   refundMethod?: 'mastercard' | 'balance';
+  transferType?: 'زين كاش' | 'ماستر كارد';
   transactionImageURLs?: string[];
   mastercardAccountNumber?: string;
   cardholderName?: string;

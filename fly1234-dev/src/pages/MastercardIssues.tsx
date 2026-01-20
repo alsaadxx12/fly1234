@@ -48,6 +48,7 @@ export default function MastercardIssues() {
     cardholderName: '',
     customerEmail: '',
     customerUsername: '',
+    transferType: 'ماستر كارد' as 'زين كاش' | 'ماستر كارد',
   });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPriority, setFilterPriority] = useState<'all' | IssuePriority>('all');
@@ -113,6 +114,7 @@ export default function MastercardIssues() {
       cardholderName: '',
       customerEmail: '',
       customerUsername: '',
+      transferType: 'ماستر كارد',
     });
     setIsAddOrEditModalOpen(true);
   };
@@ -134,6 +136,7 @@ export default function MastercardIssues() {
       cardholderName: issue.cardholderName || '',
       customerEmail: issue.customerEmail || '',
       customerUsername: issue.customerUsername || '',
+      transferType: issue.transferType || 'ماستر كارد',
     });
     setIsAddOrEditModalOpen(true);
   };
@@ -152,16 +155,17 @@ export default function MastercardIssues() {
       }
     }
 
+    const { transactionImageFiles, ...cleanIssueData } = newIssue;
     const issueData = {
-      ...newIssue,
+      ...cleanIssueData,
       transactionImageURLs: upToDateImageURLs,
       refundAmount: newIssue.refundAmount ? parseFloat(newIssue.refundAmount) : 0,
     };
 
     if (issueToEdit) {
-      await updateIssue(issueToEdit.id, issueData);
+      await updateIssue(issueToEdit.id, issueData as any);
     } else {
-      await addIssue(issueData);
+      await addIssue(issueData as any);
     }
 
     setIsAddOrEditModalOpen(false);
@@ -309,6 +313,7 @@ export default function MastercardIssues() {
                       <h3 className="font-bold text-base">{issue.title}</h3>
                       <div className="flex flex-col gap-1 mt-1">
                         <p className="text-xs font-bold text-gray-500">حساب: {issue.mastercardAccountNumber}</p>
+                        <p className="text-xs font-bold text-orange-600">نوع التحويل: {issue.transferType || 'ماستر كارد'}</p>
                         {issue.cardholderName && <p className="text-xs font-bold text-gray-400">الاسم: {issue.cardholderName}</p>}
                       </div>
                       {issue.refundAmount && (
@@ -424,6 +429,7 @@ export default function MastercardIssues() {
         title={issueToEdit ? 'تعديل مشكلة ماستر' : 'إضافة مشكلة ماستر'}
         description="أدخل تفاصيل المشكلة للمتابعة"
         size="lg"
+        closeOnOutsideClick={false}
         footer={
           <div className="flex justify-between items-center w-full">
             <div className="flex gap-2">
@@ -470,6 +476,8 @@ export default function MastercardIssues() {
                   <option value="المبلغ مستقطع من الزبون لم يتم شحن الحساب">المبلغ مستقطع من الزبون لم يتم شحن الحساب</option>
                   <option value="تم تحويل المبلغ ولم يوصل لبطاقة الزبون">تم تحويل المبلغ ولم يوصل لبطاقة الزبون</option>
                   <option value="مشكلة في تسجيل الدخول">مشكلة في تسجيل الدخول</option>
+                  <option value="مبلغ مستلم من الزبون لم يتم تعزيزه">مبلغ مستلم من الزبون لم يتم تعزيزه</option>
+                  <option value="مشكلة NOT PAID">مشكلة NOT PAID</option>
                   <option value="أخرى">أخرى</option>
                 </select>
               </div>
@@ -572,6 +580,25 @@ export default function MastercardIssues() {
                     <option value="mastercard">البطاقة</option>
                     <option value="balance">الرصيد</option>
                   </select>
+                  <div>
+                    <label className="block text-sm font-bold mb-1 text-center font-bold">نوع التحويل</label>
+                    <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => setNewIssue({ ...newIssue, transferType: 'ماستر كارد' })}
+                        className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${newIssue.transferType === 'ماستر كارد' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800'}`}
+                      >
+                        ماستر كارد
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewIssue({ ...newIssue, transferType: 'زين كاش' })}
+                        className={`flex-1 py-2 px-4 rounded-lg font-bold transition-all ${newIssue.transferType === 'زين كاش' ? 'bg-orange-500 text-white shadow-md' : 'text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-800'}`}
+                      >
+                        زين كاش
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -677,8 +704,9 @@ export default function MastercardIssues() {
                       <span className="font-bold text-gray-800 dark:text-gray-200">{issue.title}</span>
                       <div className="flex items-center gap-4 mt-0.5">
                         <p className="text-xs text-gray-500 font-bold">حساب: <span className="text-gray-700 dark:text-gray-300">{issue.mastercardAccountNumber}</span></p>
+                        <p className="text-xs text-orange-600 font-bold">نوع: <span className="text-orange-600">{issue.transferType || 'ماستر كارد'}</span></p>
                         {issue.refundAmount && (
-                          <p className="text-xs text-orange-600 font-bold flex items-center gap-1">
+                          <p className="text-xs text-emerald-600 font-bold flex items-center gap-1">
                             <DollarSign className="w-3 h-3" />
                             {issue.refundAmount} {issue.refundMethod === 'mastercard' ? 'USD' : 'IQD'}
                           </p>
