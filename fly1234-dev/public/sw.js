@@ -16,13 +16,31 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+
+    // Use Network-First for HTML and Manifest to ensure we get the latest JS bundle hashes
+    if (event.request.mode === 'navigate' || urlsToCache.includes(url.pathname)) {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => {
+                    const clonedResponse = response.clone();
+                    caches.open(CACHE_NAME).then((cache) => {
+                        cache.put(event.request, clonedResponse);
+                    });
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(event.request);
+                })
+        );
+        return;
+    }
+
+    // Default to Cache-First for other static assets
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                if (response) {
-                    return response;
-                }
-                return fetch(event.request);
+                return response || fetch(event.request);
             })
     );
 });
