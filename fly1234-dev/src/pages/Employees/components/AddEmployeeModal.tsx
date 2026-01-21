@@ -5,7 +5,6 @@ import { addEmployee, type Employee } from '../../../lib/collections/employees';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { Users, X, Mail, Phone, DollarSign, Clock, Box, Loader2, Key, AlertCircle, Info, Check, Shield, Plus, UserPlus, Building2, Briefcase } from 'lucide-react';
 import { collection, getDocs, query, orderBy, where } from 'firebase/firestore';
-import { createPortal } from 'react-dom';
 import { storage } from '../../../lib/firebase';
 import { ref, uploadString, getDownloadURL } from 'firebase/storage';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -261,9 +260,6 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
         </div>
       </div>
     </ModernModal>
-  );
-};
-document.body
   );
 };
 

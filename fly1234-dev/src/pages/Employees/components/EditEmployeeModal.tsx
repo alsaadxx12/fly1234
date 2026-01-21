@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { collection, doc, getDoc, updateDoc, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
-import { createPortal } from 'react-dom';
 
 type Props = {
   isOpen: boolean;
@@ -279,8 +278,5 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
         )}
       </div>
     </ModernModal>
-  );
-}
-document.body
   );
 }
