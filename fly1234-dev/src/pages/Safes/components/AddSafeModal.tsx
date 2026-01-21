@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { X, DollarSign, Plus, Loader2, Building2, Wallet, User, Upload, Image as ImageIcon } from 'lucide-react';
+import { X, DollarSign, Plus, Loader2, Wallet, User, Image as ImageIcon } from 'lucide-react';
 
 interface AddSafeModalProps {
   isOpen: boolean;

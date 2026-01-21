@@ -9,10 +9,9 @@ import {
     Mail,
     Lock,
     ArrowRight,
-    ShieldCheck,
-    CheckCircle2
+    ShieldCheck
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTheme } from '../../contexts/ThemeContext';
 import WelcomeOverlay from '../../components/WelcomeOverlay';
 
@@ -21,7 +20,6 @@ const Login: React.FC = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const { signIn, error: authError, loading, user } = useAuth();
-    const [success, setSuccess] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
     const location = useLocation();
@@ -39,11 +37,9 @@ const Login: React.FC = () => {
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-        setSuccess(null);
 
         try {
             await signIn(email.trim(), password);
-            setSuccess('تم تسجيل الدخول بنجاح!');
             setShowWelcome(true);
         } catch (err: any) {
             setError(err.message || 'بيانات الدخول غير صحيحة');
