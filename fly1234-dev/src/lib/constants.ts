@@ -14,7 +14,8 @@ import {
   MapPin,
   FileClock,
   UserCheck,
-  Briefcase
+  Briefcase,
+  Shield
 } from 'lucide-react';
 
 export const menuItems = [
@@ -128,9 +129,19 @@ export const menuItems = [
         textKey: 'settings',
       },
       {
+        path: '/security',
+        icon: Shield,
+        textKey: 'الأمان والحماية',
+      },
+      {
         path: '/api-integrations',
         icon: LinkIcon,
         textKey: 'ربط API',
+      },
+      {
+        path: '/system-browser',
+        icon: Users,
+        textKey: 'تصفح النظام',
       }
     ]
   }

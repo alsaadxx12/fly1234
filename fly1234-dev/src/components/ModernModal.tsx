@@ -16,6 +16,7 @@ interface ModernModalProps {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
   showCloseButton?: boolean;
   closeOnOutsideClick?: boolean;
+  headerContent?: React.ReactNode;
 }
 
 const ModernModal: React.FC<ModernModalProps> = ({
@@ -30,6 +31,7 @@ const ModernModal: React.FC<ModernModalProps> = ({
   size = 'md',
   showCloseButton = true,
   closeOnOutsideClick = true,
+  headerContent,
 }) => {
   const { theme } = useTheme();
 
@@ -89,23 +91,29 @@ const ModernModal: React.FC<ModernModalProps> = ({
 
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
-                  {icon && (
-                    <div className={`p-2.5 md:p-3 rounded-xl ${iconColorClasses[iconColor]}`}>
-                      {icon}
-                    </div>
+                  {headerContent ? (
+                    <div className="flex-1">{headerContent}</div>
+                  ) : (
+                    <>
+                      {icon && (
+                        <div className={`p-2.5 md:p-3 rounded-xl ${iconColorClasses[iconColor]}`}>
+                          {icon}
+                        </div>
+                      )}
+                      <div className="flex-1">
+                        <h2 className={`text-lg md:text-xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
+                          }`}>
+                          {title}
+                        </h2>
+                        {description && (
+                          <p className={`text-xs md:text-sm mt-0.5 md:mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            }`}>
+                            {description}
+                          </p>
+                        )}
+                      </div>
+                    </>
                   )}
-                  <div className="flex-1">
-                    <h2 className={`text-lg md:text-xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-800'
-                      }`}>
-                      {title}
-                    </h2>
-                    {description && (
-                      <p className={`text-xs md:text-sm mt-0.5 md:mt-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                        }`}>
-                        {description}
-                      </p>
-                    )}
-                  </div>
                 </div>
                 {showCloseButton && (
                   <button

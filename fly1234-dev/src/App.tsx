@@ -39,6 +39,9 @@ const Reports = lazy(() => import('./pages/Reports'));
 const ProfilePage = lazy(() => import('./pages/Profile'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const PersonalNotificationSettings = lazy(() => import('./pages/PersonalNotificationSettings'));
+const SecurityPage = lazy(() => import('./pages/Security'));
+const SystemBrowser = lazy(() => import('./pages/SystemBrowser'));
+
 
 const LoadingFallback = () => {
   const { theme } = useTheme();
@@ -129,7 +132,9 @@ function AppRoutes() {
                       <Route path="/attendance-reports" element={<PermissionGuard requiredPermissions={{ page: 'تقارير الحضور', actions: ['view'] }}><AttendanceReports /></PermissionGuard>} />
                       <Route path="/branches" element={<PermissionGuard requiredPermissions={{ page: 'الفروع', actions: ['view'] }}><Branches /></PermissionGuard>} />
                       <Route path="/leaves" element={<Leaves />} />
+                      <Route path="/security" element={<SecurityPage />} />
                       <Route path="/notification-settings" element={<PersonalNotificationSettings />} />
+                      <Route path="/system-browser" element={<PermissionGuard requiredPermissions={{ page: 'الإعدادات والربط', actions: ['view'] }}><SystemBrowser /></PermissionGuard>} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Suspense>

@@ -42,6 +42,7 @@ export interface Employee {
   endTime?: string;
   biometricsEnabled?: boolean;
   biometricCredentialId?: string;
+  password?: string;
 }
 
 const COLLECTION_NAME = 'employees';

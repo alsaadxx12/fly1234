@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useExchangeRate } from '../contexts/ExchangeRateContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNotification } from '../contexts/NotificationContext';
-import { Settings, LogOut, Menu, User, Bell, CreditCard, ChevronDown, Shield, Phone, Smartphone, Briefcase, CircleAlert as AlertCircle, Clock, RefreshCw } from 'lucide-react';
+import { Settings, LogOut, Menu, User, Bell, CreditCard, ChevronDown, Shield, Phone, Smartphone, Briefcase, CircleAlert as AlertCircle, Clock, RefreshCw, Sun, Moon } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { getWhatsAppSettings } from '../lib/collections/whatsapp';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
@@ -42,7 +42,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const { t } = useLanguage();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const location = useLocation();
-  const { theme, customSettings } = useTheme();
+  const { theme, toggleTheme, customSettings } = useTheme();
   const { showNotification } = useNotification();
   const { currentRate } = useExchangeRate();
 
@@ -424,6 +424,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       {/* Full Width Header */}
       <header className={`flex-shrink-0 bg-gradient-to-r ${customSettings.headerGradient} dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 z-50 safe-top shadow-lg relative`}>
         <div className="flex items-center justify-between px-3 md:px-6 h-14 md:h-[60px] text-white">
+          {/* Logo & Sidebar - Move to RIGHT in RTL (First child of justify-between) */}
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full">
             {/* Sidebar toggle hidden on mobile as requested - using bottom nav instead */}
             <div className="hidden md:block">
@@ -451,7 +452,10 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               <span className="font-bold text-lg">{currentRate?.toLocaleString('en-US') || '...'}</span>
             </div>
           </div>
+
+          {/* Controls - Move to LEFT in RTL (Second child of justify-between) */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            {/* Notifications - MIDDLE-LEFT in RTL (First child of group) */}
             {(hasPendingIssuesPermission || hasMastercardIssuesPermission || user?.role === 'admin' || user?.role === 'manager') && (
               <Popover.Root open={isIssuesPopoverOpen} onOpenChange={setIsIssuesPopoverOpen}>
                 <Popover.Trigger asChild>
@@ -603,6 +607,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
               </Popover.Root>
             )}
 
+            {/* User Menu - FAR LEFT in RTL (Second child of group) */}
             <div className="relative" ref={userMenuRef}>
               <button
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -740,6 +745,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                         <span>تثبيت التطبيق</span>
                       </button>
                     )}
+                    <button
+                      onClick={() => toggleTheme()}
+                      className="flex items-center gap-3 px-3 py-2.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-colors group w-full text-sm font-medium"
+                    >
+                      {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                      <span>{theme === 'dark' ? 'الوضع النهاري' : 'الوضع الليلي'}</span>
+                    </button>
                     <button
                       onClick={() => signOut().catch((error: any) => console.error('Error during sign out:', error))}
                       className="flex items-center gap-3 px-3 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors group w-full text-sm font-medium"

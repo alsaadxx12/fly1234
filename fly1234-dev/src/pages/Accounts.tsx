@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useExchangeRate } from '../contexts/ExchangeRateContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -16,10 +17,11 @@ import {
   ArrowUpLeft,
   DollarSign,
   Search,
-  Filter,
   Plus,
   Hash,
-  X
+  X,
+  Filter,
+  Calendar
 } from 'lucide-react';
 import NewReceiptVoucherModal from './Accounts/components/NewReceiptVoucherModal';
 import NewPaymentVoucherModal from './Accounts/components/NewPaymentVoucherModal';
@@ -31,7 +33,6 @@ import ExchangeRatesTable from './Accounts/components/ExchangeRatesTable';
 import ExportToExcelButton from './Accounts/components/ExportToExcelButton';
 import { collection, getDocs, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import AccountsFilters from './Accounts/components/AccountsFilters';
 import ModernModal from '../components/ModernModal';
 import * as XLSX from 'xlsx';
 
@@ -57,21 +58,14 @@ const Accounts = () => {
   const [appliedInvoiceNumber, setAppliedInvoiceNumber] = useState('');
 
   const [filters, setFilters] = useState({
-    beneficiary: '',
-    safe: '',
-    employee: '',
-    confirmation: 'all',
-    settlement: 'all',
     currency: 'all' as 'all' | 'USD' | 'IQD',
     dateFrom: undefined as Date | undefined,
     dateTo: undefined as Date | undefined,
   });
 
-  const [companies, setCompanies] = useState<any[]>([]);
   const [isFiltersExpanded, setIsFiltersExpanded] = useState(false);
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const [allVouchersForExport, setAllVouchersForExport] = useState<any[]>([]);
-
 
   const {
     vouchers,
@@ -90,15 +84,11 @@ const Accounts = () => {
     type: activeView,
     searchTerm: appliedSearchTerm,
     invoiceNumberFilter: appliedInvoiceNumber,
-    beneficiaryFilter: filters.beneficiary,
     currencyFilter: filters.currency,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     itemsPerPage: itemsPerPage,
   });
-
-  const paginatedVouchers = vouchers;
-
 
   const [newRate, setNewRate] = React.useState('');
   const [notes, setNotes] = React.useState('');
@@ -119,75 +109,21 @@ const Accounts = () => {
   const readOnlyMode = !hasAddPermission && !hasEditPermission && !hasDeletePermission &&
     !hasConfirmPermission && !hasSettlementPermission;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const companiesSnapshot = await getDocs(collection(db, 'companies'));
-        setCompanies(companiesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-    fetchData();
-  }, []);
-
   const handleSearch = useCallback(() => {
     setAppliedSearchTerm(searchInput);
     setAppliedInvoiceNumber(invoiceNumberInput);
   }, [searchInput, invoiceNumberInput]);
 
-  const handleClearSearch = () => {
+  const handleClearSearch = useCallback(() => {
     setSearchInput('');
     setInvoiceNumberInput('');
     setAppliedSearchTerm('');
     setAppliedInvoiceNumber('');
-  };
-
-  const handleResetFilters = useCallback(() => {
-    setSearchInput('');
-    setInvoiceNumberInput('');
-    setAppliedSearchTerm('');
-    setAppliedInvoiceNumber('');
-    setFilters({
-      beneficiary: '',
-      safe: '',
-      employee: '',
-      confirmation: 'all',
-      settlement: 'all',
-      currency: 'all',
-      dateFrom: undefined,
-      dateTo: undefined,
-    });
   }, []);
-
-  const handleUpdateRate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newRate || !employee) return;
-
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await updateRate(parseFloat(newRate), notes, employee.name);
-      setIsExchangeRateModalOpen(false);
-      setNewRate('');
-      setNotes('');
-      setSuccess('تم تحديث سعر الصرف بنجاح');
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (error) {
-      console.error('Error updating rate:', error);
-      setError('فشل في تحديث سعر الصرف');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const fetchAllVouchersForExport = async () => {
     try {
       let q = query(collection(db, 'vouchers'), where('type', '==', activeView));
-
-      if (filters.beneficiary) {
-        q = query(q, where('companyName', '==', filters.beneficiary));
-      }
       if (filters.currency !== 'all') {
         q = query(q, where('currency', '==', filters.currency));
       }
@@ -222,24 +158,23 @@ const Accounts = () => {
     }
   };
 
-  const handleExportExchangeRates = () => {
-    if (!history || history.length === 0) return;
-
+  const handleUpdateRate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRate || !employee) return;
     try {
-      const excelData = history.map(item => ({
-        'السعر': item.rate,
-        'التاريخ': new Date(item.created_at).toLocaleDateString('en-GB'),
-        'الوقت': new Date(item.created_at).toLocaleTimeString('en-US'),
-        'تم بواسطة': item.created_by,
-        'الملاحظات': item.notes || '',
-      }));
-
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'ExchangeRateHistory');
-      XLSX.writeFile(workbook, `exchange_rate_history_${new Date().toISOString().split('T')[0]}.xlsx`);
+      setIsSubmitting(true);
+      setError(null);
+      await updateRate(parseFloat(newRate), notes, employee.name);
+      setIsExchangeRateModalOpen(false);
+      setNewRate('');
+      setNotes('');
+      setSuccess('تم تحديث سعر الصرف بنجاح');
+      setTimeout(() => setSuccess(null), 3000);
     } catch (error) {
-      console.error('Error exporting exchange rates:', error);
+      console.error('Error updating rate:', error);
+      setError('فشل في تحديث سعر الصرف');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -247,37 +182,17 @@ const Accounts = () => {
     const voucher = vouchers.find(v => v.id === voucherId);
     if (!voucher) return;
 
-    let requiredPermission: 'edit' | 'delete' | null = null;
-    let permissionError: 'edit' | 'delete' | null = null;
-
-    if (action === 'edit') {
-      requiredPermission = 'edit';
-      permissionError = 'edit';
-    } else if (action === 'delete') {
-      requiredPermission = 'delete';
-      permissionError = 'delete';
+    if (action === 'edit' && !hasEditPermission) {
+      setPermissionErrorType('edit'); setIsPermissionErrorModalOpen(true); return;
     }
-
-    if (requiredPermission && !checkPermission('accounts', requiredPermission)) {
-      setPermissionErrorType(permissionError);
-      setIsPermissionErrorModalOpen(true);
-      return;
+    if (action === 'delete' && !hasDeletePermission) {
+      setPermissionErrorType('delete'); setIsPermissionErrorModalOpen(true); return;
     }
 
     setSelectedVoucherId(voucherId);
-
-    switch (action) {
-      case 'view':
-        setIsViewVoucherModalOpen(true);
-        break;
-      case 'edit':
-        setEditingVoucher(voucher as any);
-        setIsEditVoucherModalOpen(true);
-        break;
-      case 'delete':
-        setIsDeleteModalOpen(true);
-        break;
-    }
+    if (action === 'view') setIsViewVoucherModalOpen(true);
+    if (action === 'edit') { setEditingVoucher(voucher as any); setIsEditVoucherModalOpen(true); }
+    if (action === 'delete') setIsDeleteModalOpen(true);
   };
 
   const confirmDeleteVoucher = async () => {
@@ -297,41 +212,38 @@ const Accounts = () => {
     }
   };
 
-  const activeFiltersCount = [
-    appliedSearchTerm,
-    appliedInvoiceNumber,
-    filters.beneficiary,
-    filters.safe,
-    filters.employee,
-    filters.dateFrom,
-    filters.dateTo,
-    filters.currency !== 'all',
-    filters.confirmation !== 'all',
-    filters.settlement !== 'all'
-  ].filter(Boolean).length;
+  const handleExportExchangeRates = () => {
+    if (!history || history.length === 0) return;
+    try {
+      const excelData = history.map(item => ({
+        'السعر': item.rate,
+        'التاريخ': new Date(item.created_at).toLocaleDateString('en-GB'),
+        'الوقت': new Date(item.created_at).toLocaleTimeString('en-US'),
+        'تم بواسطة': item.created_by,
+        'الملاحظات': item.notes || '',
+      }));
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'ExchangeRateHistory');
+      XLSX.writeFile(workbook, `exchange_rate_history_${new Date().toISOString().split('T')[0]}.xlsx`);
+    } catch (error) { console.error('Error exporting exchange rates:', error); }
+  };
 
   const selectedVoucherForDelete = vouchers.find(v => v.id === selectedVoucherId);
 
   return (
     <main className={`w-full flex flex-col flex-1 min-h-screen ${theme === 'dark' ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-      {/* Success Notification */}
       {success && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-emerald-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
-          <div className="bg-white/20 p-1.5 rounded-lg">
-            <Check className="w-5 h-5" />
-          </div>
+          <Check className="w-5 h-5" />
           <span className="font-bold">{success}</span>
         </div>
       )}
-
-      {/* Error Notification */}
       {error && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[100] bg-red-500 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
-          <div className="bg-white/20 p-1.5 rounded-lg">
-            <ShieldOff className="w-5 h-5" />
-          </div>
+          <ShieldOff className="w-5 h-5" />
           <span className="font-bold">{error}</span>
-          <button onClick={() => setError(null)} className="mr-auto hover:bg-white/10 rounded-lg p-1 transition-colors">
+          <button onClick={() => setError(null)} className="mr-auto">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -348,398 +260,312 @@ const Accounts = () => {
         </div>
       )}
 
-      {/* View Switcher Tabs */}
+      {/* Tabs */}
       <div className="sticky top-0 z-40 bg-inherit/80 backdrop-blur-md pt-4 px-4 sm:px-6">
         <div className="flex items-center justify-center mb-6">
-          <div className={`flex flex-wrap sm:flex-nowrap gap-2 p-1.5 rounded-2xl shadow-inner w-full sm:w-auto ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-gray-200/50'}`}>
+          <div className="flex bg-gray-100/80 dark:bg-gray-800/80 p-1 rounded-xl w-full sm:w-auto self-start backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-inner">
             <button
               onClick={() => setActiveView('receipt')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${activeView === 'receipt'
-                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg scale-[1.02]'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2.5 ${activeView === 'receipt'
+                ? 'bg-white dark:bg-gray-700 text-emerald-600 dark:text-emerald-400 shadow-sm border border-emerald-100/50 dark:border-emerald-900/50 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
                 }`}
             >
-              <ArrowDownRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className={`p-1 rounded-md transition-colors ${activeView === 'receipt' ? 'bg-emerald-50 dark:bg-emerald-900/30' : 'bg-transparent'}`}>
+                <ArrowDownRight className={`w-4 h-4 transition-transform duration-500 ${activeView === 'receipt' ? 'rotate-0' : '-rotate-45 opacity-50'}`} />
+              </div>
               <span>قبض</span>
             </button>
-
             <button
               onClick={() => setActiveView('payment')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${activeView === 'payment'
-                ? 'bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-lg scale-[1.02]'
-                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+              className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2.5 ${activeView === 'payment'
+                ? 'bg-white dark:bg-gray-700 text-rose-600 dark:text-rose-400 shadow-sm border border-rose-100/50 dark:border-rose-900/50 scale-[1.02]'
+                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
                 }`}
             >
-              <ArrowUpLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              <div className={`p-1 rounded-md transition-colors ${activeView === 'payment' ? 'bg-rose-50 dark:bg-rose-900/30' : 'bg-transparent'}`}>
+                <ArrowUpLeft className={`w-4 h-4 transition-transform duration-500 ${activeView === 'payment' ? 'rotate-0' : 'rotate-45 opacity-50'}`} />
+              </div>
               <span>دفع</span>
             </button>
-
-            {hasCurrencyPermission && (
-              <button
-                onClick={() => setActiveView('exchange')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all duration-300 ${activeView === 'exchange'
-                  ? 'bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg scale-[1.02]'
-                  : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                  }`}
-              >
-                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />
-                <span>صرف</span>
-              </button>
-            )}
+            {hasCurrencyPermission && <button onClick={() => setActiveView('exchange')} className={`flex-1 sm:flex-none px-6 py-2.5 rounded-lg text-xs font-black transition-all flex items-center justify-center gap-2.5 ${activeView === 'exchange'
+              ? 'bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm border border-amber-100/50 dark:border-amber-900/50 scale-[1.02]'
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-white/50 dark:hover:bg-gray-700/50'
+              }`}>
+              <div className={`p-1 rounded-md transition-colors ${activeView === 'exchange' ? 'bg-amber-50 dark:bg-amber-900/30' : 'bg-transparent'}`}>
+                <DollarSign className="w-4 h-4" />
+              </div>
+              <span>صرف</span>
+            </button>}
           </div>
         </div>
 
-        {/* Header Controls */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b dark:border-gray-800">
+        {/* Header Row */}
+        <div className="flex flex-col gap-4 pb-4 border-b dark:border-gray-800">
           {activeView !== 'exchange' ? (
-            <>
-              {/* Search & Actions Group */}
-              <div className="flex flex-col md:flex-row gap-3 items-stretch md:items-center w-full lg:w-auto">
-                <div className="flex flex-col sm:flex-row gap-2 flex-grow">
-                  <div className="relative flex-1 min-w-0 sm:min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="بحث بالاسم أو التفاصيل..."
-                      value={searchInput}
-                      onChange={(e) => setSearchInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className={`w-full pr-4 pl-10 h-11 rounded-xl border-2 transition-all outline-none text-sm ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700 text-white focus:border-blue-500' : 'bg-white border-gray-100 focus:border-blue-500'}`}
-                    />
-                  </div>
-                  <div className="relative flex-1 min-w-0 sm:min-w-[140px]">
-                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <input
-                      type="number"
-                      placeholder="رقم السند..."
-                      value={invoiceNumberInput}
-                      onChange={(e) => setInvoiceNumberInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                      className={`w-full pr-4 pl-10 h-11 rounded-xl border-2 transition-all outline-none text-sm ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700 text-white focus:border-blue-500' : 'bg-white border-gray-100 focus:border-blue-500'}`}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button onClick={handleSearch} className="flex-1 sm:flex-none px-4 sm:px-6 h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2">
-                    <Search className="w-4 h-4 sm:hidden" />
-                    <span className="sm:inline">بحث</span>
-                  </button>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {/* Filter Toggle */}
                   <button
                     onClick={() => setIsFiltersExpanded(!isFiltersExpanded)}
-                    className={`min-w-[44px] h-11 flex items-center justify-center rounded-xl transition-all relative ${isFiltersExpanded ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/40 dark:text-blue-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'}`}
+                    className={`h-11 px-4 flex items-center gap-2 rounded-xl border-2 transition-all font-bold text-sm ${isFiltersExpanded ? 'bg-blue-600 border-blue-600 text-white' : theme === 'dark' ? 'bg-gray-800 border-gray-700 text-gray-400' : 'bg-white border-gray-100 text-gray-600'}`}
                   >
-                    <Filter className="w-5 h-5" />
-                    {activeFiltersCount > 0 && <span className="absolute -top-1 -right-1 w-5 h-5 bg-blue-600 text-white text-[0.6rem] font-bold rounded-full flex items-center justify-center ring-2 ring-white dark:ring-gray-900">{activeFiltersCount}</span>}
+                    <Filter className="w-4 h-4" />
+                    <span className="hidden sm:inline">بحث وفلترة</span>
+                  </button>
+
+                  <div className="h-6 w-px bg-gray-200 dark:bg-gray-700 mx-1 hidden sm:block"></div>
+
+                  {/* Pagination */}
+                  <div className="relative group">
+                    <select
+                      value={itemsPerPage}
+                      onChange={(e) => {
+                        setItemsPerPage(parseInt(e.target.value));
+                        fetchVouchersPage('first');
+                      }}
+                      className="h-11 px-3 pr-8 rounded-xl border-2 font-bold bg-transparent border-gray-100 dark:border-gray-700 outline-none text-sm appearance-none cursor-pointer"
+                    >
+                      <option value={15}>15 سند</option>
+                      <option value={30}>30 سند</option>
+                      <option value={50}>50 سند</option>
+                      <option value={-1}>الكل</option>
+                    </select>
+                    <Plus className="absolute right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-30 rotate-45 pointer-events-none" />
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* New Voucher Button (Desktop only) */}
+                  <button
+                    onClick={() => {
+                      if (activeView === 'receipt') {
+                        hasAddPermission ? setIsNewReceiptVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+                      } else {
+                        hasAddPermission ? setIsNewPaymentVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+                      }
+                    }}
+                    className={`hidden lg:flex items-center gap-2 h-11 px-6 rounded-xl text-white font-black shadow-lg transition-all text-sm whitespace-nowrap ${activeView === 'receipt' ? 'bg-gradient-to-r from-emerald-500 to-green-600' : 'bg-gradient-to-r from-rose-500 to-red-600'}`}
+                  >
+                    <Plus className="w-5 h-5" />
+                    <span>{activeView === 'receipt' ? 'إضافة قبض' : 'إضافة دفع'}</span>
+                  </button>
+
+                  {/* Export */}
+                  <ExportToExcelButton
+                    vouchers={allVouchersForExport}
+                    onPrepareExport={fetchAllVouchersForExport}
+                    fileName={activeView === 'receipt' ? 'receipts' : 'payments'}
+                    voucherType={activeView}
+                    className="h-11 px-4 !bg-emerald-500/10 !text-emerald-500 !rounded-xl !border-0 hover:!bg-emerald-500/20 shadow-sm transition-all"
+                  >
+                    <Download className="w-5 h-5" />
+                  </ExportToExcelButton>
+
+                  <button
+                    onClick={() => setIsDeletedVouchersModalOpen(true)}
+                    className="h-11 px-4 bg-rose-500/10 text-rose-500 rounded-xl hover:bg-rose-500/20 transition-all shadow-sm"
+                    title="المحذوفات"
+                  >
+                    <Trash2 className="w-5 h-5" />
                   </button>
                 </div>
               </div>
 
-              {/* Action Buttons Group */}
-              <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-                <button onClick={() => setIsDeletedVouchersModalOpen(true)} className="h-11 px-3 flex items-center gap-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-100 transition-colors text-sm font-bold" title="عرض السجلات المحذوفة">
-                  <Trash2 className="w-4 h-4" />
-                  <span className="hidden sm:inline">المحذوفات</span>
-                </button>
+              <AnimatePresence>
+                {isFiltersExpanded && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                    <div className="p-4 rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 mt-2 space-y-4 bg-gray-50/50 dark:bg-gray-800/30">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Search Input */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase opacity-50 px-1">بحث نصي</label>
+                          <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="text"
+                              placeholder="اسم الزبون أو التفاصيل..."
+                              value={searchInput}
+                              onChange={(e) => setSearchInput(e.target.value)}
+                              className={`w-full pr-4 pl-10 h-11 rounded-xl border-2 transition-all outline-none font-bold text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700 focus:border-blue-500' : 'bg-white border-gray-100 focus:border-blue-500'}`}
+                            />
+                          </div>
+                        </div>
 
-                <ExportToExcelButton
-                  vouchers={allVouchersForExport}
-                  onPrepareExport={fetchAllVouchersForExport}
-                  fileName={activeView === 'receipt' ? 'receipt_vouchers' : 'payment_vouchers'}
-                  voucherType={activeView}
-                >
-                  <Download className="w-4 h-4" />
-                  <span className="hidden sm:inline">تصدير</span>
-                </ExportToExcelButton>
+                        {/* Invoice Number */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase opacity-50 px-1">رقم السند</label>
+                          <div className="relative">
+                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                              type="number"
+                              placeholder="أدخل الرقم..."
+                              value={invoiceNumberInput}
+                              onChange={(e) => setInvoiceNumberInput(e.target.value)}
+                              className={`w-full pr-4 pl-10 h-11 rounded-xl border-2 transition-all outline-none font-bold text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700 focus:border-blue-500' : 'bg-white border-gray-100 focus:border-blue-500'}`}
+                            />
+                          </div>
+                        </div>
 
-                <select
-                  value={itemsPerPage}
-                  onChange={(e) => {
-                    const newSize = parseInt(e.target.value, 10);
-                    setItemsPerPage(newSize);
-                    fetchVouchersPage('first');
-                  }}
-                  className="h-11 px-3 rounded-xl border-2 font-bold transition-all bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border-transparent focus:border-blue-500 outline-none text-xs sm:text-sm"
-                >
-                  <option value={15}>15 صفحة</option>
-                  <option value={30}>30 صفحة</option>
-                  <option value={50}>50 صفحة</option>
-                  <option value={-1}>عرض الكل</option>
-                </select>
+                        {/* Currency */}
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase opacity-50 px-1">العملة</label>
+                          <select
+                            value={filters.currency}
+                            onChange={(e) => setFilters(p => ({ ...p, currency: e.target.value as any }))}
+                            className={`w-full h-11 px-3 rounded-xl border-2 font-black outline-none cursor-pointer text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700 text-blue-400' : 'bg-white border-gray-100 text-blue-600'}`}
+                          >
+                            <option value="all">الكل 🏳️</option>
+                            <option value="USD">USD 💵</option>
+                            <option value="IQD">IQD 🇮🇶</option>
+                          </select>
+                        </div>
+                      </div>
 
-                <div className="hidden lg:block w-px h-8 bg-gray-200 dark:bg-gray-700 mx-1" />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase opacity-50 px-1">من تاريخ</label>
+                          <div className="relative">
+                            <input type="date" value={filters.dateFrom ? filters.dateFrom.toISOString().split('T')[0] : ''} onChange={(e) => setFilters(p => ({ ...p, dateFrom: e.target.value ? new Date(e.target.value) : undefined }))} className={`w-full h-11 px-4 pr-10 rounded-xl border-2 outline-none font-bold text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`} />
+                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase opacity-50 px-1">إلى تاريخ</label>
+                          <div className="relative">
+                            <input type="date" value={filters.dateTo ? filters.dateTo.toISOString().split('T')[0] : ''} onChange={(e) => setFilters(p => ({ ...p, dateTo: e.target.value ? new Date(e.target.value) : undefined }))} className={`w-full h-11 px-4 pr-10 rounded-xl border-2 outline-none font-bold text-sm ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'}`} />
+                            <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-30" />
+                          </div>
+                        </div>
+                      </div>
 
-                <button
-                  onClick={() => {
-                    if (activeView === 'receipt') {
-                      hasAddPermission ? setIsNewReceiptVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
-                    } else {
-                      hasAddPermission ? setIsNewPaymentVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
-                    }
-                  }}
-                  className={`flex items-center justify-center gap-2 h-11 px-6 rounded-xl text-white font-black shadow-lg transition-all text-sm whitespace-nowrap grow sm:grow-0 ${activeView === 'receipt' ? 'bg-gradient-to-r from-emerald-500 to-green-600 hover:shadow-emerald-500/20' : 'bg-gradient-to-r from-rose-500 to-red-600 hover:shadow-rose-500/20'}`}
-                >
-                  <Plus className="w-5 h-5" />
-                  <span>{activeView === 'receipt' ? t('newReceiptVoucher') : t('newPaymentVoucher')}</span>
-                </button>
-              </div>
-            </>
+                      <div className="flex justify-end">
+                        <button
+                          onClick={handleSearch}
+                          className="px-8 h-11 bg-blue-600 text-white rounded-xl font-black shadow-lg hover:bg-blue-700 transition-all flex items-center gap-2"
+                        >
+                          <Search className="w-4 h-4" />
+                          <span>تطبيق الفلترة</span>
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           ) : (
-            <div className="flex flex-row-reverse items-center justify-between w-full">
-              <button
-                onClick={() => setIsExchangeRateModalOpen(true)}
-                className="px-6 h-11 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold shadow-lg hover:shadow-amber-500/20 transition-all flex items-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                <span>{t('updateRate')}</span>
-              </button>
-              <button
-                onClick={handleExportExchangeRates}
-                className="h-11 px-4 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors text-sm font-bold"
-              >
-                <Download className="w-4 h-4" />
-                <span>تصدير الأسعار</span>
-              </button>
+            <div className="flex items-center justify-between w-full font-bold">
+              <button onClick={() => setIsExchangeRateModalOpen(true)} className="px-6 h-11 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl shadow-lg flex items-center gap-2 transition-all active:scale-95"><Plus className="w-5 h-5" />تحديث السعر</button>
+              <button onClick={handleExportExchangeRates} className="h-11 px-4 bg-emerald-500/10 text-emerald-500 rounded-xl flex items-center gap-2 hover:bg-emerald-500/20 transition-all"><Download className="w-4 h-4" />تصدير</button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col p-4 sm:p-6 pb-20">
+      {/* Main Content */}
+      <div className="flex-1 p-4 sm:p-6 pb-28">
         {activeView !== 'exchange' ? (
-          <div className="flex-1 flex flex-col gap-4">
-            {isFiltersExpanded && (
-              <div className="animate-in fade-in slide-in-from-top-4 duration-300">
-                <AccountsFilters
-                  beneficiaryFilter={filters.beneficiary}
-                  setBeneficiaryFilter={(value) => setFilters(prev => ({ ...prev, beneficiary: value }))}
-                  currencyFilter={filters.currency}
-                  setCurrencyFilter={(value) => setFilters(prev => ({ ...prev, currency: value }))}
-                  dateFrom={filters.dateFrom}
-                  setDateFrom={(date) => setFilters(prev => ({ ...prev, dateFrom: date }))}
-                  dateTo={filters.dateTo}
-                  setDateTo={(date) => setFilters(prev => ({ ...prev, dateTo: date }))}
-                  onReset={handleResetFilters}
-                  beneficiaries={companies.map(c => c.name)}
-                  companies={companies}
-                />
+          <div className="relative">
+            {isLoadingVouchers && (
+              <div className="absolute inset-0 z-20 bg-inherit/50 backdrop-blur-sm flex flex-col items-center justify-center rounded-3xl">
+                <Loader2 className="w-10 h-10 text-blue-500 animate-spin mb-2" />
+                <p className="text-sm font-bold opacity-60">جاري التحميل...</p>
               </div>
             )}
-
-            <div className="flex-1 relative min-h-[400px]">
-              {isLoadingVouchers ? (
-                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-inherit/50 backdrop-blur-sm rounded-3xl">
-                  <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-4" />
-                  <p className="text-gray-500 font-bold animate-pulse">جاري تحميل السندات...</p>
-                </div>
-              ) : (
-                <AccountsTable
-                  vouchers={paginatedVouchers}
-                  onSettlementToggle={(voucher) => {
-                    if (!hasSettlementPermission) {
-                      setPermissionErrorType('settlement');
-                      setIsPermissionErrorModalOpen(true);
-                      return;
-                    }
-                    toggleSettlement(voucher);
-                  }}
-                  onConfirmationToggle={(voucher) => {
-                    if (!hasConfirmPermission) {
-                      setPermissionErrorType('confirm');
-                      setIsPermissionErrorModalOpen(true);
-                      return;
-                    }
-                    toggleConfirmation(voucher);
-                  }}
-                  onViewVoucher={(id) => handleVoucherAction('view', id)}
-                  onEditVoucher={(id) => handleVoucherAction('edit', id)}
-                  onDeleteVoucher={(id) => handleVoucherAction('delete', id)}
-                  readOnlyMode={readOnlyMode}
-                  onNextPage={nextPage}
-                  onPreviousPage={prevPage}
-                  currentPage={currentPage}
-                  hasNextPage={hasNextPage}
-                  hasPreviousPage={hasPreviousPage}
-                  totalVouchers={totalVouchers}
-                  itemsPerPage={itemsPerPage}
-                />
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="animate-in fade-in duration-500">
-            <ExchangeRatesTable
-              history={history}
-              isLoading={isLoadingRates}
+            <AccountsTable
+              vouchers={vouchers}
+              onSettlementToggle={(v) => hasSettlementPermission ? toggleSettlement(v) : (setPermissionErrorType('settlement'), setIsPermissionErrorModalOpen(true))}
+              onConfirmationToggle={(v) => hasConfirmPermission ? toggleConfirmation(v) : (setPermissionErrorType('confirm'), setIsPermissionErrorModalOpen(true))}
+              onViewVoucher={(id) => handleVoucherAction('view', id)}
+              onEditVoucher={(id) => handleVoucherAction('edit', id)}
+              onDeleteVoucher={(id) => handleVoucherAction('delete', id)}
+              readOnlyMode={readOnlyMode}
+              onNextPage={nextPage}
+              onPreviousPage={prevPage}
+              currentPage={currentPage}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              totalVouchers={totalVouchers}
+              itemsPerPage={itemsPerPage}
             />
           </div>
+        ) : (
+          <ExchangeRatesTable history={history} isLoading={isLoadingRates} />
         )}
       </div>
 
-      {/* Modals Section */}
-      <ModernModal
-        isOpen={isPermissionErrorModalOpen}
-        onClose={() => setIsPermissionErrorModalOpen(false)}
-        title="تنبيه: صلاحيات محدودة"
-        icon={<ShieldOff className="w-8 h-8 text-red-500" />}
-      >
+      {/* Floating Action Button (FAB) - Mobile Only, Icon Only, Fixed */}
+      {activeView !== 'exchange' && (
+        <button
+          onClick={() => {
+            if (activeView === 'receipt') {
+              hasAddPermission ? setIsNewReceiptVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+            } else {
+              hasAddPermission ? setIsNewPaymentVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+            }
+          }}
+          className={`fixed bottom-24 left-6 z-[60] lg:hidden flex items-center justify-center w-16 h-16 rounded-full text-white font-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-4 border-white dark:border-gray-900 active:scale-95 transition-all ${activeView === 'receipt' ? 'bg-gradient-to-br from-emerald-500 to-green-600' : 'bg-gradient-to-br from-rose-500 to-red-600'}`}
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      )}
+
+      {/* Modals */}
+      <ModernModal isOpen={isPermissionErrorModalOpen} onClose={() => setIsPermissionErrorModalOpen(false)} title="تنبيه: صلاحيات محدودة" icon={<ShieldOff className="w-8 h-8 text-red-500" />}>
         <div className="text-center p-2">
-          <p className="text-lg font-bold mb-4 opacity-80">
+          <p className="text-lg font-bold mb-4">
             {permissionErrorType === 'edit' && 'ليس لديك صلاحية تعديل السندات.'}
             {permissionErrorType === 'delete' && 'ليس لديك صلاحية حذف السندات.'}
+            {permissionErrorType === 'add' && 'ليس لديك صلاحية إضافة سندات.'}
             {permissionErrorType === 'confirm' && 'ليس لديك صلاحية تأكيد السندات.'}
             {permissionErrorType === 'settlement' && 'ليس لديك صلاحية تحاسب السندات.'}
-            {permissionErrorType === 'add' && 'ليس لديك صلاحية إضافة سندات جديدة.'}
           </p>
-          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm font-medium">
-            يرجى مراجعة إدارة النظام لطلب الصلاحيات المطلوبة.
-          </div>
+          <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 rounded-2xl text-amber-800 dark:text-amber-300 text-sm">يرجى مراجعة إدارة النظام لطلب الصلاحيات.</div>
         </div>
       </ModernModal>
 
-      {isNewReceiptVoucherModalOpen && (
-        <NewReceiptVoucherModal
-          isOpen={isNewReceiptVoucherModalOpen}
-          onClose={() => setIsNewReceiptVoucherModalOpen(false)}
-          settings={settings}
-        />
-      )}
+      {isNewReceiptVoucherModalOpen && <NewReceiptVoucherModal isOpen={isNewReceiptVoucherModalOpen} onClose={() => setIsNewReceiptVoucherModalOpen(false)} settings={settings} />}
+      {isNewPaymentVoucherModalOpen && <NewPaymentVoucherModal isOpen={isNewPaymentVoucherModalOpen} onClose={() => setIsNewPaymentVoucherModalOpen(false)} />}
+      {isEditVoucherModalOpen && selectedVoucherId && editingVoucher && <EditVoucherModal isOpen={isEditVoucherModalOpen} onClose={() => { setIsEditVoucherModalOpen(false); setEditingVoucher(null); }} voucherId={selectedVoucherId} settings={settings} onVoucherUpdated={() => { }} />}
+      {isViewVoucherModalOpen && selectedVoucherId && <ViewVoucherDetailsModal isOpen={isViewVoucherModalOpen} onClose={() => { setIsViewVoucherModalOpen(false); setSelectedVoucherId(null); }} voucherId={selectedVoucherId} settings={settings} />}
 
-      {isNewPaymentVoucherModalOpen && (
-        <NewPaymentVoucherModal
-          isOpen={isNewPaymentVoucherModalOpen}
-          onClose={() => setIsNewPaymentVoucherModalOpen(false)}
-        />
-      )}
-
-      {isEditVoucherModalOpen && selectedVoucherId && editingVoucher && (
-        <EditVoucherModal
-          isOpen={isEditVoucherModalOpen}
-          onClose={() => {
-            setIsEditVoucherModalOpen(false);
-            setEditingVoucher(null);
-          }}
-          voucherId={selectedVoucherId}
-          settings={settings}
-          onVoucherUpdated={() => {
-            /* Real-time updates handle this */
-          }}
-        />
-      )}
-
-      {isViewVoucherModalOpen && selectedVoucherId && (
-        <ViewVoucherDetailsModal
-          isOpen={isViewVoucherModalOpen}
-          onClose={() => {
-            setIsViewVoucherModalOpen(false);
-            setSelectedVoucherId(null);
-          }}
-          voucherId={selectedVoucherId}
-          settings={settings}
-        />
-      )}
-
-      <ModernModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => setIsDeleteModalOpen(false)}
-        title="هل أنت متأكد من الحذف؟"
-        icon={<Trash2 className="w-8 h-8 text-red-600" />}
-        footer={
-          <div className="flex justify-end gap-3 w-full">
-            <button
-              onClick={() => setIsDeleteModalOpen(false)}
-              className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl font-bold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 transition-colors"
-            >
-              تراجع
-            </button>
-            <button
-              onClick={confirmDeleteVoucher}
-              disabled={isSubmitting}
-              className="flex-1 sm:flex-none px-8 py-2.5 rounded-xl font-black bg-red-600 text-white shadow-lg shadow-red-500/20 hover:bg-red-700 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'تأكيد الحذف'}
-            </button>
-          </div>
-        }
-      >
+      <ModernModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="تأكيد الحذف" icon={<Trash2 className="w-8 h-8 text-red-600" />} footer={
+        <div className="flex gap-3 w-full justify-end">
+          <button onClick={() => setIsDeleteModalOpen(false)} className="px-6 py-2.5 rounded-xl font-bold bg-gray-100 dark:bg-gray-800 transition-colors">تراجع</button>
+          <button onClick={confirmDeleteVoucher} disabled={isSubmitting} className="px-8 py-2.5 rounded-xl font-black bg-red-600 text-white shadow-lg shadow-red-500/20 disabled:opacity-50">{isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'تأكيد الحذف'}</button>
+        </div>
+      }>
         <div className="space-y-4">
-          <p className="text-gray-500 dark:text-gray-400 font-medium">سيتم نقل السند إلى قائمة المحذوفات. هذا الإجراء لا يمكن التراجع عنه بسهولة.</p>
+          <p className="opacity-70 font-medium">سيتم نقل السند إلى قائمة المحذوفات.</p>
           {selectedVoucherForDelete && (
-            <div className={`p-5 rounded-2xl border-2 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
-              <div className="text-xl font-black mb-3 text-red-600 dark:text-red-400">{selectedVoucherForDelete.companyName}</div>
-              <div className="grid grid-cols-2 gap-4 text-sm font-bold opacity-80">
-                <div className="flex flex-col">
-                  <span>رقم السند:</span>
-                  <span className="font-mono text-base">#{selectedVoucherForDelete.invoiceNumber}</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span>المبلغ:</span>
-                  <span className="text-base text-gray-900 dark:text-gray-100">{selectedVoucherForDelete.amount.toLocaleString()} {selectedVoucherForDelete.currency}</span>
-                </div>
+            <div className={`p-4 rounded-2xl border-2 ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+              <div className="text-xl font-black text-red-600 dark:text-red-400 mb-2">{selectedVoucherForDelete.companyName}</div>
+              <div className="flex justify-between font-bold opacity-80">
+                <span>#{selectedVoucherForDelete.invoiceNumber}</span>
+                <span>{selectedVoucherForDelete.amount.toLocaleString()} {selectedVoucherForDelete.currency}</span>
               </div>
             </div>
           )}
         </div>
       </ModernModal>
 
-      <DeletedVouchersModal
-        isOpen={isDeletedVouchersModalOpen}
-        onClose={() => setIsDeletedVouchersModalOpen(false)}
-      />
+      <DeletedVouchersModal isOpen={isDeletedVouchersModalOpen} onClose={() => setIsDeletedVouchersModalOpen(false)} />
 
-      <ModernModal
-        isOpen={isExchangeRateModalOpen}
-        onClose={() => setIsExchangeRateModalOpen(false)}
-        title={t('updateExchangeRate')}
-        icon={<DollarSign className="w-8 h-8 text-amber-500" />}
-      >
+      <ModernModal isOpen={isExchangeRateModalOpen} onClose={() => setIsExchangeRateModalOpen(false)} title={t('updateExchangeRate')} icon={<DollarSign className="w-8 h-8 text-amber-500" />}>
         <form onSubmit={handleUpdateRate} className="space-y-6">
-          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-100 dark:border-emerald-900/30 flex items-center justify-between">
-            <span className="font-bold opacity-70">السعر الحالي:</span>
-            <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-              {isLoadingRates ? '...' : currentRate.toLocaleString()} <span className="text-sm font-bold opacity-60">د.ع</span>
-            </span>
+          <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-100 flex items-center justify-between">
+            <span className="font-bold opacity-70">الحالي:</span>
+            <span className="text-2xl font-black text-emerald-600">{currentRate.toLocaleString()} <small>د.ع</small></span>
           </div>
-
           <div className="space-y-2">
-            <label className="text-sm font-black opacity-70 px-1">السعر الجديد (لكل 100 دولار)</label>
-            <input
-              type="number"
-              value={newRate}
-              onChange={(e) => setNewRate(e.target.value)}
-              className="w-full h-14 px-4 text-2xl font-black text-center border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 focus:border-amber-500 dark:focus:border-amber-500 outline-none transition-all"
-              placeholder="0"
-              dir="ltr"
-              required
-            />
+            <label className="text-sm font-black opacity-70 px-1">السعر الجديد (لكل 100$)</label>
+            <input type="number" value={newRate} onChange={(e) => setNewRate(e.target.value)} className="w-full h-14 px-4 text-2xl font-black text-center border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 outline-none transition-all" placeholder="0" dir="ltr" required />
           </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-black opacity-70 px-1">ملاحظات التغيير</label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full h-24 p-4 text-base font-bold border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-50 dark:bg-gray-800 focus:border-amber-500 outline-none transition-all resize-none"
-              placeholder="اكتب سبب تغيير السعر هنا..."
-            />
-          </div>
-
+          <textarea value={notes} onChange={(e) => setNotes(e.target.value)} className="w-full h-24 p-4 text-sm font-bold border-2 border-gray-200 dark:border-gray-700 rounded-2xl bg-gray-100 dark:bg-gray-800 outline-none resize-none" placeholder="ملاحظات..." />
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => setIsExchangeRateModalOpen(false)}
-              className="flex-1 h-12 rounded-xl font-bold bg-gray-100 dark:bg-gray-800 text-gray-500 transition-colors"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !newRate}
-              className="flex-[2] h-12 rounded-xl font-black bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/20 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'تحديث السعر الآن'}
-            </button>
+            <button type="button" onClick={() => setIsExchangeRateModalOpen(false)} className="flex-1 h-12 rounded-xl font-bold bg-gray-100 dark:bg-gray-800">إلغاء</button>
+            <button type="submit" disabled={isSubmitting || !newRate} className="flex-[2] h-12 rounded-xl font-black bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg disabled:opacity-50">{isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'تحديث الآن'}</button>
           </div>
         </form>
       </ModernModal>

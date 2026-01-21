@@ -1,37 +1,29 @@
-import React from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
   MessageCircle,
   Table,
-  Globe,
-  Brain,
   Building2,
   Bell,
   Shield,
-  Database,
-  FileText,
-  Zap,
   Search,
   Palette,
-  Printer
+  Printer,
+  Megaphone
 } from 'lucide-react';
 
-import SystemSettings from './Settings/components/SystemSettings';
 import WhatsAppSettings from './Settings/components/WhatsAppSettings';
 import NetworkStatusBanner from './Settings/components/NetworkStatusBanner';
 import AccountSettings from './Settings/AccountSettings';
-import AISettingsTab from './Settings/components/AISettingsTab';
 import CompanySettings from './Settings/components/CompanySettings';
 import NotificationSettings from './Settings/components/NotificationSettings';
 import ThemeSettings from './Settings/components/ThemeSettings';
 import PrintTemplateEditor from './Settings/components/PrintTemplateEditor';
-import SecuritySettings from './Settings/components/SecuritySettings';
+import AdSettings from './Settings/components/AdSettings';
 
-type TabId = 'theme' | 'companies' | 'notifications' | 'whatsapp' | 'accounts' | 'print' | 'security';
+type TabId = 'theme' | 'print' | 'companies' | 'accounts' | 'notifications' | 'whatsapp' | 'ads';
 
 interface TabConfig {
   id: TabId;
@@ -42,22 +34,21 @@ interface TabConfig {
 }
 
 function Settings() {
-  const [activeTab, setActiveTab] = React.useState<TabId>('theme');
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [activeTab, setActiveTab] = useState<TabId>('theme');
+  const [searchQuery, setSearchQuery] = useState('');
   const { t } = useLanguage();
-  const { theme } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
-  React.useEffect(() => {
+  useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab') as TabId;
-    if (tab && ['theme', 'companies', 'notifications', 'whatsapp', 'accounts', 'print'].includes(tab)) {
+    if (tab && ['theme', 'companies', 'notifications', 'whatsapp', 'accounts', 'print', 'ads'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [location]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     navigate(`/settings?tab=${activeTab}`, { replace: true });
   }, [activeTab, navigate]);
 
@@ -105,10 +96,10 @@ function Settings() {
       category: 'communications'
     },
     {
-      id: 'security',
-      label: 'الأمان والحماية',
-      icon: Shield,
-      description: 'إعدادات البصمة والتحقق الحيوي',
+      id: 'ads',
+      label: 'إعلانات التطبيق',
+      icon: Megaphone,
+      description: 'إدارة صور لوحة التحكم',
       category: 'general'
     },
   ];
@@ -125,7 +116,7 @@ function Settings() {
     tab.description.includes(searchQuery)
   );
 
-  const groupedTabs = React.useMemo(() => {
+  const groupedTabs = useMemo(() => {
     const grouped: Record<string, TabConfig[]> = {
       general: [],
       business: [],
@@ -200,13 +191,13 @@ function Settings() {
                               key={tab.id}
                               onClick={() => setActiveTab(tab.id)}
                               className={`w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg text-right ${isActive
-                                  ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-                                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                                ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
                                 }`}
                             >
                               <div className={`p-1.5 md:p-2 rounded-lg ${isActive
-                                  ? 'bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400'
-                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+                                ? 'bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
                                 }`}>
                                 <Icon className="w-4 h-4" />
                               </div>
@@ -234,9 +225,9 @@ function Settings() {
             {activeTab === 'print' && <PrintTemplateEditor />}
             {activeTab === 'companies' && <CompanySettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
-            {activeTab === 'whatsapp' && <WhatsAppSettings setActiveTab={setActiveTab} />}
+            {activeTab === 'whatsapp' && <WhatsAppSettings setActiveTab={(id: any) => setActiveTab(id)} />}
             {activeTab === 'accounts' && <AccountSettings />}
-            {activeTab === 'security' && <SecuritySettings />}
+            {activeTab === 'ads' && <AdSettings />}
           </div>
         </div>
       </div>

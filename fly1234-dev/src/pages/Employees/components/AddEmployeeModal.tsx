@@ -147,7 +147,8 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
         endTime: formData.endTime,
         safeId: formData.safeId,
         branchId: formData.branchId,
-        departmentId: formData.departmentId
+        departmentId: formData.departmentId,
+        password: formData.password
       };
 
       await addEmployee(employeeData as any);

@@ -19,15 +19,15 @@ export function useWhatsAppApi() {
       setError(networkError.message);
       throw networkError;
     }
-    
+
     setIsLoading(true);
     setError(null);
 
     try {
-      const cleanInstanceId = instanceId.startsWith('instance') 
-        ? instanceId.substring(8) 
+      const cleanInstanceId = instanceId.startsWith('instance')
+        ? instanceId.substring(8)
         : instanceId;
-      
+
       if (!cleanInstanceId) {
         throw new Error('معرف النسخة غير صالح');
       }
@@ -42,13 +42,17 @@ export function useWhatsAppApi() {
 
       if (response.data) {
         if (response.data.error) {
-          console.error('[useWhatsAppApi] API returned an error:', response.data.error);
-          throw new Error(response.data.error);
+          console.error('[useWhatsAppApi] API returned a logical error:', response.data.error);
+          const apiError = new Error(response.data.error);
+          if (response.data.error === 'instance is not connected') {
+            (apiError as any).doNotRetry = true;
+          }
+          throw apiError;
         }
-        
+
         setError(null);
         const accountData = response.data;
-        
+
         return {
           ...accountData,
           name: accountData.name || accountData.pushname || 'حساب واتساب',
@@ -61,14 +65,14 @@ export function useWhatsAppApi() {
       }
     } catch (error) {
       console.error(`Error fetching WhatsApp account (Attempt ${retryAttempt + 1}):`, error);
-      
-      if (retryAttempt < MAX_RETRIES) {
+
+      if (retryAttempt < MAX_RETRIES && !(error as any).doNotRetry) {
         const retryDelay = INITIAL_RETRY_DELAY * Math.pow(2, retryAttempt);
         console.warn(`[useWhatsAppApi] Retrying account fetch in ${retryDelay}ms... (Attempt ${retryAttempt + 1}/${MAX_RETRIES})`);
         await new Promise(resolve => setTimeout(resolve, retryDelay));
         return fetchWhatsAppAccount(instanceId, token, retryAttempt + 1);
       }
-      
+
       let errorMessage = 'فشل في جلب معلومات الحساب بعد عدة محاولات.';
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
@@ -85,7 +89,7 @@ export function useWhatsAppApi() {
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-        
+
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {

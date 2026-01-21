@@ -81,7 +81,13 @@ const StatNode = ({
         border: '1px solid rgba(255,255,255,0.2)',
         boxShadow: isOverlay
           ? '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-          : '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
+          : '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 400,
+        damping: 30,
+        mass: 1
       }}
     >
       {/* Dynamic Background Gradient Blob */}
@@ -137,9 +143,22 @@ const SortableStatNode = ({ data }: { data: NodeData }) => {
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="touch-none">
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      layout
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 40,
+        opacity: { duration: 0.2 }
+      }}
+      {...attributes}
+      {...listeners}
+      className="touch-none"
+    >
       <StatNode data={data} isDragging={isDragging} />
-    </div>
+    </motion.div>
   );
 };
 

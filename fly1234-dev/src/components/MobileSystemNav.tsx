@@ -14,7 +14,8 @@ import {
     ChevronLeft,
     Bell,
     Zap,
-    CreditCard
+    CreditCard,
+    Shield
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +36,8 @@ const MobileSystemNav: React.FC = () => {
         { path: '/pending-issues', icon: AlertTriangle, label: 'المشاكل', color: 'text-orange-500', bg: 'bg-orange-500/10' },
         { path: '/api-integrations', icon: Zap, label: 'API', color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
         { path: '/mastercard-issues', icon: CreditCard, label: 'مشاكل الماستر', color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { path: '/system-browser', icon: Users, label: 'داتا فلاي', color: 'text-indigo-600', bg: 'bg-indigo-600/10' },
+        { path: '/security', icon: Shield, label: 'الأمان والحماية', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         { path: '/settings', icon: Settings, label: 'إعدادات النظام', color: 'text-slate-500', bg: 'bg-slate-500/10' },
     ];
 

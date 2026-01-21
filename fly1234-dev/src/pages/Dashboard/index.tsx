@@ -2,10 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, getDocs, query, orderBy, limit, getCountFromServer, where } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import { Company } from '../Companies/hooks/useCompanies';
 import StatisticsGrid from './components/StatisticsGrid';
+import AdCarousel from './components/AdCarousel';
 import ExchangeRateChart from './components/ExchangeRateChart';
 import RecentVouchers from './components/RecentVouchers';
 import { useExchangeRate } from '../../contexts/ExchangeRateContext';
@@ -34,18 +34,14 @@ export default function DashboardContent() {
     topIssuesAdded: TopPerformer[];
     topIssuesResolved: TopPerformer[];
   }>({ topIssuesAdded: [], topIssuesResolved: [] });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isLoadingIssues, setIsLoadingIssues] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { currentRate, history: rateHistory, isLoading: isLoadingRate } = useExchangeRate();
 
   useEffect(() => {
     const fetchStats = async () => {
       if (!user) return;
-      setIsLoading(true);
       try {
         const companiesRef = collection(db, 'companies');
-        
+
         const totalSnapshot = await getCountFromServer(companiesRef);
         const total = totalSnapshot.data().count;
 
@@ -53,8 +49,8 @@ export default function DashboardContent() {
         const cashQuery = query(collection(db, 'companies'), where('paymentType', '==', 'cash'));
 
         const [creditSnapshot, cashSnapshot] = await Promise.all([
-            getCountFromServer(creditQuery),
-            getCountFromServer(cashQuery)
+          getCountFromServer(creditQuery),
+          getCountFromServer(cashQuery)
         ]);
 
         const credit = creditSnapshot.data().count;
@@ -74,36 +70,32 @@ export default function DashboardContent() {
         setStats({ total, credit, cash, history });
       } catch (err) {
         console.error("Error fetching stats:", err);
-        setError("فشل في تحميل الإحصائيات");
-      } finally {
-        setIsLoading(false);
       }
     };
 
     const fetchIssueStats = async () => {
       if (!user) return;
-      setIsLoadingIssues(true);
       try {
         const employeesSnapshot = await getDocs(collection(db, 'employees'));
         const employees = employeesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
-        
+
         const employeeImageMap = new Map<string, string | undefined>();
         employees.forEach(emp => {
-            let imageUrl = emp.image;
-            if (!imageUrl && emp.files && Array.isArray(emp.files)) {
-                const profilePicFile = emp.files.find((file: any) => file.name === 'صورة شخصية');
-                if (profilePicFile) {
-                    imageUrl = profilePicFile.url;
-                }
+          let imageUrl = emp.image;
+          if (!imageUrl && emp.files && Array.isArray(emp.files)) {
+            const profilePicFile = emp.files.find((file: any) => file.name === 'صورة شخصية');
+            if (profilePicFile) {
+              imageUrl = profilePicFile.url;
             }
-            if (emp.name) {
-                employeeImageMap.set(emp.name, imageUrl);
-            }
+          }
+          if (emp.name) {
+            employeeImageMap.set(emp.name, imageUrl);
+          }
         });
 
         const issuesSnapshot = await getDocs(collection(db, 'issues'));
         const mastercardIssuesSnapshot = await getDocs(collection(db, 'mastercard_issues'));
-        
+
         const issues = issuesSnapshot.docs.map(doc => doc.data() as Issue);
         const mastercardIssues = mastercardIssuesSnapshot.docs.map(doc => doc.data() as MastercardIssue);
 
@@ -131,8 +123,6 @@ export default function DashboardContent() {
 
       } catch (err) {
         console.error("Error fetching issue stats:", err);
-      } finally {
-        setIsLoadingIssues(false);
       }
     };
 
@@ -153,7 +143,8 @@ export default function DashboardContent() {
 
   return (
     <div className="space-y-6">
-      <StatisticsGrid 
+      <AdCarousel />
+      <StatisticsGrid
         stats={stats}
         issueStats={issueStats}
         currentRate={currentRate}

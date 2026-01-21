@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import ReactDOM from 'react-dom';
-import { useLanguage } from '../../../contexts/LanguageContext';
 import { useExchangeRate } from '../../../contexts/ExchangeRateContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import useVoucherHistory from '../hooks/useVoucherHistory';
 import {
-  X, ArrowDownRight, ArrowUpLeft, Building2, DollarSign, Phone, Box,
-  FileText, Check, AlertTriangle, Loader2, AlertCircle,
-  Search, MessageCircle, Users, Save, CreditCard
+  ArrowDownRight, ArrowUpLeft, Building2, DollarSign, Phone,
+  FileText, Check, TriangleAlert as AlertTriangle, Loader2,
+  Search, MessageCircle, CreditCard
 } from 'lucide-react';
-import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc, where } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import ModernModal from '../../../components/ModernModal';
 
 interface EditVoucherModalProps {
   isOpen: boolean;
@@ -37,7 +36,6 @@ export default function EditVoucherModal({
   settings,
   onVoucherUpdated
 }: EditVoucherModalProps) {
-  const { t } = useLanguage();
   const { currentRate } = useExchangeRate();
   const { employee } = useAuth();
   const { addHistoryEntry, detectChanges } = useVoucherHistory();
@@ -48,7 +46,7 @@ export default function EditVoucherModal({
     companyName: '',
     whatsAppGroupId: '',
     whatsAppGroupName: '',
-    currency: 'USD', // USD or IQD
+    currency: 'USD',
     amount: '',
     gates: '',
     internal: '',
@@ -59,7 +57,8 @@ export default function EditVoucherModal({
     safeId: '',
     safeName: '',
     exchangeRate: currentRate.toString(),
-    type: 'receipt' as 'receipt' | 'payment'
+    type: 'receipt' as 'receipt' | 'payment',
+    entityType: 'company' as 'company' | 'client' | 'expense'
   });
 
   // Derived state
@@ -71,51 +70,15 @@ export default function EditVoucherModal({
   const [originalData, setOriginalData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [companies, setCompanies] = useState<Array<{ id: string; name: string }>>([]);
+  const [companies, setCompanies] = useState<Array<{ id: string; name: string, whatsAppGroupId?: string, whatsAppGroupName?: string }>>([]);
   const [safes, setSafes] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [filteredCompanies, setFilteredCompanies] = useState<Array<{ id: string; name: string }>>([]);
+  const [filteredCompanies, setFilteredCompanies] = useState<Array<{ id: string; name: string, whatsAppGroupId?: string, whatsAppGroupName?: string }>>([]);
   const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
-  const [selectedCompanyHasWhatsApp, setSelectedCompanyHasWhatsApp] = useState(false);
   const [isCustomCompany, setIsCustomCompany] = useState(false);
-
-  // WhatsApp sending state
-  const [sendToWhatsApp, setSendToWhatsApp] = useState(false);
-
-  // Format and validate phone number
-  const formatPhoneNumber = (phone: string): string => {
-    // Remove any non-digit characters
-    let cleaned = phone.replace(/\D/g, '').trim();
-
-    // Add country code if not present
-    if (!cleaned.startsWith('964') && cleaned.length > 0) {
-      // Remove leading zero if present
-      if (cleaned.startsWith('0')) {
-        cleaned = cleaned.substring(1);
-      }
-      cleaned = '964' + cleaned;
-    }
-
-    // Ensure the number has the correct format for WhatsApp API
-    if (cleaned.length > 0 && !cleaned.includes('@')) {
-      cleaned = cleaned + '@c.us';
-    }
-
-    return cleaned;
-  };
-
-  // Check if phone number is valid
-  const isValidPhoneNumber = (phone: string): boolean => {
-    // Basic validation - should have at least 10 digits after formatting
-    if (!phone) return false;
-
-    // Remove @c.us if present for validation
-    const cleaned = phone.replace(/\D/g, '').replace('@c.us', '').trim();
-    return cleaned.length >= 9; // Iraqi numbers are typically 10-11 digits with country code
-  };
 
   // Load voucher data
   useEffect(() => {
@@ -126,19 +89,14 @@ export default function EditVoucherModal({
       setError(null);
 
       try {
-        // Fetch voucher data
         const voucherRef = doc(db, 'vouchers', voucherId);
         const voucherDoc = await getDoc(voucherRef);
 
-        if (!voucherDoc.exists()) {
-          throw new Error('لم يتم العثور على السند');
-        }
+        if (!voucherDoc.exists()) throw new Error('لم يتم العثور على السند');
 
         const voucherData = voucherDoc.data();
-        // Store original data for comparison
         setOriginalData(voucherData);
 
-        // Set form data
         setFormData({
           companyId: voucherData.companyId || '',
           companyName: voucherData.companyName || '',
@@ -155,17 +113,12 @@ export default function EditVoucherModal({
           safeId: voucherData.safeId || '',
           safeName: voucherData.safeName || '',
           exchangeRate: voucherData.exchangeRate?.toString() || currentRate.toString(),
-          type: voucherData.type || 'receipt'
+          type: voucherData.type || 'receipt',
+          entityType: voucherData.entityType || 'company'
         });
 
-        // Set search query to company name
         setSearchQuery(voucherData.companyName || '');
-
-        // Set custom company flag
         setIsCustomCompany(voucherData.isCustomCompany || voucherData.companyId === 'custom');
-
-        // Set selected company has WhatsApp flag
-        setSelectedCompanyHasWhatsApp(!!voucherData.whatsAppGroupId);
 
       } catch (error) {
         console.error('Error fetching voucher data:', error);
@@ -175,278 +128,107 @@ export default function EditVoucherModal({
       }
     };
 
-    if (isOpen && voucherId) {
-      fetchVoucherData();
-    }
+    if (isOpen && voucherId) fetchVoucherData();
   }, [isOpen, voucherId, currentRate]);
 
   // Load companies and safes
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all safes
-        const safesRef = collection(db, 'safes');
-        const safesQuery = query(safesRef, orderBy('name', 'asc'));
-        const safesSnapshot = await getDocs(safesQuery);
+        const safesSnapshot = await getDocs(query(collection(db, 'safes'), orderBy('name', 'asc')));
+        setSafes(safesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name })));
 
-        const safesData = safesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name
-        }));
-
-        setSafes(safesData);
-
-        // Fetch companies
         setIsLoadingCompanies(true);
-        const companiesRef = collection(db, 'companies');
-        const companiesQuery = query(companiesRef, orderBy('name', 'asc'));
-        const companiesSnapshot = await getDocs(companiesQuery);
+        const collectionsToFetch = [
+          { name: 'companies', type: 'company' },
+          { name: 'clients', type: 'client' },
+          { name: 'expenses', type: 'expense' }
+        ];
 
-        const companiesData = companiesSnapshot.docs.map(doc => ({
-          id: doc.id,
-          name: doc.data().name,
-          whatsAppGroupId: doc.data().whatsAppGroupId || null,
-          whatsAppGroupName: doc.data().whatsAppGroupName || null
-        }));
+        let allEntities: any[] = [];
+        for (const coll of collectionsToFetch) {
+          const snapshot = await getDocs(collection(db, coll.name));
+          allEntities = [...allEntities, ...snapshot.docs.map(doc => ({
+            id: doc.id,
+            name: doc.data().name,
+            whatsAppGroupId: doc.data().whatsAppGroupId || null,
+            whatsAppGroupName: doc.data().whatsAppGroupName || null,
+            entityType: coll.type
+          }))];
+        }
 
-        setCompanies(companiesData);
-        setFilteredCompanies(companiesData);
-        setIsLoadingCompanies(false);
+        setCompanies(allEntities);
+        setFilteredCompanies(allEntities);
       } catch (error) {
         console.error('Error fetching data:', error);
         setError('فشل في تحميل البيانات');
+      } finally {
+        setIsLoadingCompanies(false);
       }
     };
 
-    if (isOpen) {
-      fetchData();
-    }
+    if (isOpen) fetchData();
   }, [isOpen]);
 
-  // Filter companies based on search query
+  // Filter companies
   useEffect(() => {
     if (searchQuery.trim() === '') {
       setFilteredCompanies(companies);
       return;
     }
-
-    const query = searchQuery.toLowerCase();
-    const filtered = companies.filter(company =>
-      company.name.toLowerCase().includes(query)
-    );
-
-    setFilteredCompanies(filtered);
+    const q = searchQuery.toLowerCase();
+    setFilteredCompanies(companies.filter(company => company.name.toLowerCase().includes(q)));
   }, [searchQuery, companies]);
 
-  // Fetch company details when a company is selected
-  const fetchCompanyDetails = async (companyId: string) => {
-    try {
-      const companyRef = doc(db, 'companies', companyId);
-      const companyDoc = await getDoc(companyRef);
-
-      if (companyDoc.exists()) {
-        const companyData = companyDoc.data();
-
-        // Check if company has WhatsApp group
-        if (companyData.whatsAppGroupId && companyData.whatsAppGroupName) {
-          setFormData(prev => ({
-            ...prev,
-            whatsAppGroupId: companyData.whatsAppGroupId,
-            whatsAppGroupName: companyData.whatsAppGroupName
-          }));
-          setSelectedCompanyHasWhatsApp(true);
-        } else {
-          setFormData(prev => ({
-            ...prev,
-            whatsAppGroupId: '',
-            whatsAppGroupName: ''
-          }));
-          setSelectedCompanyHasWhatsApp(false);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching company details:', error);
-    }
-  };
-
-  // When amount changes, update gates field to match
-  // Also recalculate gates when other distribution fields change
+  // Recalculate distribution
   useEffect(() => {
-    try {
-      const amount = parseFloat(formData.amount) || 0;
-      const internal = parseFloat(formData.internal) || 0;
-      const external = parseFloat(formData.external) || 0;
-      const fly = parseFloat(formData.fly) || 0;
+    if (formData.type !== 'receipt') return;
+    const amount = parseFloat(formData.amount) || 0;
+    const internal = parseFloat(formData.internal) || 0;
+    const external = parseFloat(formData.external) || 0;
+    const fly = parseFloat(formData.fly) || 0;
+    const totalDistribution = internal + external + fly;
 
-      // Calculate total of distribution fields
-      const totalDistribution = internal + external + fly;
-
-      // Check if distribution exceeds total amount
-      if (totalDistribution > amount) {
-        setDistributionError('مجموع الحقول (داخلي + خارجي + فلاي) يتجاوز المبلغ الكلي');
-        // Set gates to 0 when distribution exceeds amount
-        setFormData(prev => ({
-          ...prev,
-          gates: '0'
-        }));
-        return;
-      } else {
-        // Clear error if distribution is valid
-        setDistributionError(null);
-      }
-
-      // Calculate gates as amount minus other fields
-      const calculatedGates = Math.max(0, amount - internal - external - fly);
-
-      // Update gates field with calculated value
-      setFormData(prev => ({
-        ...prev,
-        gates: calculatedGates.toString()
-      }));
-    } catch (error) {
-      console.error('Error calculating distribution:', error);
+    if (totalDistribution > amount) {
+      setDistributionError('مجموع الحقول يتجاوز المبلغ الكلي');
+      setFormData(prev => ({ ...prev, gates: '0' }));
+    } else {
+      setDistributionError(null);
+      setFormData(prev => ({ ...prev, gates: (amount - totalDistribution).toString() }));
     }
+  }, [formData.amount, formData.internal, formData.external, formData.fly, formData.type]);
 
-  }, [formData.amount, formData.internal, formData.external, formData.fly]);
-
-  // Handle company selection
-  const handleSelectCompany = async (id: string, name: string) => {
-    setFormData(prev => ({
-      ...prev,
-      companyId: id || 'custom',
-      companyName: name
-    }));
-    setSearchQuery(name);
-    setShowCompanyDropdown(false);
-    setIsCustomCompany(false);
-
-    // Fetch company details to check for WhatsApp group
-    await fetchCompanyDetails(id);
-  };
-
-  // Handle custom company name input
-  const handleCustomCompanyName = (name: string) => {
-    if (!name || name.trim() === '') return;
-
-    // Ask user to select the type of entity
-    const entityType = window.confirm(
-      `اختر نوع الكيان لـ "${name.trim()}":\n` +
-      'اضغط "موافق" للإضافة كشركة، أو "إلغاء" للإضافة كعميل أو مصاريف'
-    ) ? 'company' : 'client';
-
-    setSearchQuery(name.trim());
-    setFormData(prev => ({
-      ...prev,
-      companyId: 'custom',
-      companyName: name.trim(),
-      whatsAppGroupId: '',
-      whatsAppGroupName: '',
-      entityType: entityType
-    }));
-    setShowCompanyDropdown(false);
-    setIsCustomCompany(true);
-    setSelectedCompanyHasWhatsApp(false);
-  };
-
-  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-
-    // For amount fields, only allow numbers and decimal point, but display with thousand separators
-    if (['amount', 'gates', 'internal', 'external', 'fly', 'exchangeRate'].includes(name)) {
-      // Remove any non-digit characters except decimal point for processing
-      const cleanValue = value.replace(/[^\d.]/g, '');
-
-      // Only allow one decimal point
-      const parts = cleanValue.split('.');
-      if (parts.length > 2) return;
-
-      if (cleanValue === '' || /^[0-9]*\.?[0-9]*$/.test(cleanValue)) {
-        setFormData(prev => ({ ...prev, [name]: cleanValue }));
-      }
-      return;
-    }
-
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle currency change
-  const handleCurrencyChange = (currency: 'USD' | 'IQD') => {
-    setFormData(prev => ({
-      ...prev,
-      currency,
-      // Reset amount and distribution fields when currency changes
-      amount: '',
-      gates: '0',
-      internal: '0',
-      external: '0',
-      fly: '0'
-    }));
-  };
-
-  // Handle safe selection
   const handleSafeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const safeId = e.target.value;
     const safeName = safes.find(safe => safe.id === safeId)?.name || '';
-
-    setFormData(prev => ({
-      ...prev,
-      safeId,
-      safeName
-    }));
+    setFormData(prev => ({ ...prev, safeId, safeName }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!employee || !voucherId) {
-      setError('لم يتم العثور على بيانات الموظف أو السند');
-      return;
-    }
+    if (!employee || !voucherId) return;
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      // Validate form - allow custom company names
-      if (!formData.companyId && !formData.companyName) {
-        throw new Error('يرجى اختيار شركة');
-      }
-
       const amount = parseFloat(formData.amount);
-      if (isNaN(amount) || amount <= 0) {
-        throw new Error('يرجى إدخال مبلغ صحيح');
-      }
+      if (isNaN(amount) || amount <= 0) throw new Error('يرجى إدخال مبلغ صحيح');
+      if (distributionError) throw new Error(distributionError);
+      if (!formData.safeId) throw new Error('يرجى اختيار صندوق');
 
-      // Check if distribution is valid
-      if (distributionError) {
-        throw new Error(distributionError);
-      }
-
-      // Check if safe is selected
-      if (!formData.safeId) {
-        throw new Error('يرجى اختيار صندوق');
-      }
-
-      // Validate phone number if sending to WhatsApp
-      if (sendToWhatsApp && !formData.whatsAppGroupId && formData.phone.trim()) {
-        const formattedPhone = formatPhoneNumber(formData.phone);
-        if (!isValidPhoneNumber(formattedPhone)) {
-          throw new Error('رقم الهاتف غير صالح للإرسال عبر واتساب. يجب أن يكون الرقم بتنسيق صحيح');
-        }
-      }
-
-      // Create voucher object
       const voucherData = {
-        // Keep the original type
-        type: formData.type,
-        companyId: isCustomCompany || !formData.companyId || formData.companyId === 'custom' ? 'custom' : formData.companyId,
+        companyId: isCustomCompany ? 'custom' : formData.companyId,
         companyName: formData.companyName,
         whatsAppGroupId: formData.whatsAppGroupId || null,
         whatsAppGroupName: formData.whatsAppGroupName || null,
         currency: formData.currency,
-        amount: parseFloat(formData.amount),
+        amount: amount,
         gates: parseFloat(formData.gates) || 0,
         internal: parseFloat(formData.internal) || 0,
         external: parseFloat(formData.external) || 0,
@@ -462,557 +244,204 @@ export default function EditVoucherModal({
         isCustomCompany: isCustomCompany
       };
 
-      // Update in Firestore
-      const voucherRef = doc(db, 'vouchers', voucherId);
-      await updateDoc(voucherRef, voucherData);
+      await updateDoc(doc(db, 'vouchers', voucherId), voucherData);
 
-      // If this is a custom company, save it to the companies collection for future use
-      if (isCustomCompany && formData.companyName.trim()) {
-        try {
-          // Determine which collection to use based on entityType
-          const collectionName = formData.entityType === 'company' ? 'companies' : 'clients';
-
-          // Ask user if they want to add this entity to the database
-          const entityTypeDisplay = formData.entityType === 'company' ? 'الشركات' : 'العملاء أو المصاريف';
-          const shouldAddCompany = window.confirm(`هل تريد إضافة "${formData.companyName.trim()}" إلى قاعدة بيانات ${entityTypeDisplay}؟`);
-
-          if (shouldAddCompany) {
-            // Check if a company with this name already exists
-            const companiesRef = collection(db, collectionName);
-            const q = query(companiesRef, where("name", "==", formData.companyName.trim()));
-            const existingCompanies = await getDocs(q);
-
-            if (existingCompanies.empty) {
-              // Create a new entity record
-              await addDoc(companiesRef, {
-                name: formData.companyName.trim(),
-                paymentType: 'cash', // Default to cash
-                phone: formData.phone || null,
-                whatsAppGroupId: formData.whatsAppGroupId || null,
-                whatsAppGroupName: formData.whatsAppGroupName || null,
-                createdAt: serverTimestamp(),
-                createdBy: employee.name,
-                createdById: employee.id || '',
-                isCustomCompany: true,
-                entityType: formData.entityType
-              });
-              console.log(`Custom ${formData.entityType} saved to database:`, formData.companyName);
-            }
-          }
-        } catch (companyError) {
-          // Don't fail the voucher update if saving the company fails
-          console.error(`Error saving custom ${formData.entityType || 'entity'}:`, companyError);
-        }
-      }
-
-      // Record changes in history
       if (originalData) {
         const changes = detectChanges(originalData, voucherData);
-
-        // Log detailed changes for debugging
-        if (changes.length > 0) {
-          console.log('Detected changes:', JSON.stringify(changes, null, 2));
-
-          // Add history entry and get the ID
-          const historyId = await addHistoryEntry(
-            voucherId,
-            employee.name,
-            employee.id || '',
-            changes
-          );
-
-          if (historyId) {
-            console.log('History entry added successfully with ID:', historyId);
-          } else {
-            console.log('No history entry was created (possibly no valid changes)');
-          }
-        } else {
-          console.log('No changes detected, skipping history entry');
-        }
+        if (changes.length > 0) await addHistoryEntry(voucherId, employee.name, employee.id || '', changes);
       }
 
-      // Show success message
-      setSuccess('تم تحديث سند القبض بنجاح');
-
-      // Notify parent component
+      setSuccess('تم تحديث السند بنجاح');
       onVoucherUpdated();
-
-      // Close modal after delay
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    } catch (error) {
-      console.error('Error updating voucher:', error);
-      setError(error instanceof Error ? error.message : 'فشل في تحديث سند القبض');
+      setTimeout(onClose, 1500);
+    } catch (error: any) {
+      setError(error.message || 'فشل في تحديث السند');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!isOpen) return null;
-
-  const modalContent = (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[9999] backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
-      <div className="bg-white dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl w-full max-w-5xl mx-4 max-h-[90vh] flex flex-col overflow-hidden transform animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-700 dark:via-indigo-700 dark:to-purple-700 text-white relative overflow-hidden">
-          <div className="absolute inset-0 bg-white/5 backdrop-blur-sm"></div>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-white/20 backdrop-blur-sm rounded-xl shadow-lg ring-2 ring-white/30">
-                {formData.type === 'receipt' ? (
-                  <ArrowDownRight className="w-7 h-7 text-white" />
-                ) : (
-                  <ArrowUpLeft className="w-7 h-7 text-white" />
-                )}
-              </div>
-              <div>
-                <h3 className="text-2xl font-black tracking-tight">تعديل سند {formData.type === 'receipt' ? 'قبض' : 'دفع'}</h3>
-                <p className="text-sm text-blue-100 mt-1 font-bold">تعديل بيانات السند #{originalData?.invoiceNumber || voucherId?.substring(0, 6)}</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-white/80 hover:bg-white/20 rounded-xl transition-all hover:rotate-90 duration-300"
-            >
-              <X className="w-6 h-6" />
-            </button>
-          </div>
+  const Header = (
+    <div className="flex items-center justify-between w-full h-10 px-0 translate-y-[-4px]">
+      <div className="flex items-center gap-3">
+        <div className={`p-2 rounded-lg ${formData.type === 'receipt' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'}`}>
+          {formData.type === 'receipt' ? <ArrowDownRight className="w-5 h-5" /> : <ArrowUpLeft className="w-5 h-5" />}
         </div>
+        <div className="font-black text-sm uppercase tracking-wider opacity-60">
+          Edit #{originalData?.invoiceNumber || '...'}
+        </div>
+      </div>
 
-        {isLoading ? (
-          <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
-            <div className="flex flex-col items-center gap-3">
-              <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
-              <p className="text-gray-600">جاري تحميل بيانات السند...</p>
-            </div>
-          </div>
-        ) : (
-          <div className="p-5 overflow-y-auto flex-1 bg-gray-50">
-            <form onSubmit={handleSubmit}>
-              {/* Main Content */}
-              <div className="grid grid-cols-1 gap-5">
-                {/* Company & Amount Section */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-center gap-2 mb-4 border-b dark:border-gray-700 pb-2">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900/40 rounded-lg">
-                      <Building2 className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <h4 className="font-black text-gray-800 dark:text-gray-100">معلومات الطرف الآخر والمبلغ</h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Company Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                        شركة / زبون
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={searchQuery}
-                          onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setShowCompanyDropdown(true);
-                          }}
-                          onFocus={() => setShowCompanyDropdown(true)}
-                          onBlur={() => {
-                            setTimeout(() => {
-                              setShowCompanyDropdown(false);
-                            }, 200);
-                          }}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 pr-9"
-                          placeholder="ابحث عن شركة..."
-                          required
-                        />
-                        <div className="absolute right-2.5 top-2.5">
-                          <Search className="w-4 h-4 text-gray-400" />
-                        </div>
-
-                        {/* Dropdown for company search results */}
-                        {showCompanyDropdown && (
-                          <div className="absolute z-10 mt-1 w-full bg-gray-50 border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto text-gray-800">
-                            {searchQuery.trim() !== '' && (
-                              <div
-                                className="sticky top-0 z-20 p-2 bg-blue-50 border-b border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors"
-                                onClick={() => {
-                                  handleCustomCompanyName(searchQuery);
-                                  setShowCompanyDropdown(false);
-                                }}
-                              >
-                                <div className="font-medium text-blue-600 flex items-center gap-1.5 text-sm">
-                                  <Building2 className="w-3.5 h-3.5" />
-                                  <span>استخدام "{searchQuery}" كاسم شركة/زبون</span>
-                                </div>
-                                <div className="text-xs text-blue-500 mt-0.5">
-                                  إضافة اسم مخصص غير موجود في قاعدة البيانات
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="max-h-48 overflow-y-auto">
-                              {isLoadingCompanies ? (
-                                <div className="p-2 text-center text-gray-500">
-                                  <Loader2 className="w-4 h-4 animate-spin mx-auto mb-1 text-gray-500" />
-                                  <span className="text-xs">جاري التحميل...</span>
-                                </div>
-                              ) : filteredCompanies.length === 0 ? (
-                                <div className="p-2 text-center text-gray-500 text-xs">
-                                  لا توجد شركات مطابقة في قاعدة البيانات
-                                </div>
-                              ) : (
-                                <>
-                                  {filteredCompanies.length > 0 && (
-                                    <div className="p-1.5 bg-gray-50 border-b border-gray-200 text-xs text-gray-500">
-                                      الشركات المسجلة ({filteredCompanies.length})
-                                    </div>
-                                  )}
-                                  {filteredCompanies.map(company => (
-                                    <div
-                                      key={company.id}
-                                      className="p-2 hover:bg-gray-100 cursor-pointer border-b border-gray-200 last:border-b-0"
-                                      onClick={() => handleSelectCompany(company.id, company.name as string)}
-                                    >
-                                      <div className="font-medium text-gray-800 text-sm">{company.name}</div>
-                                      {company.whatsAppGroupId && (
-                                        <div className="flex items-center gap-1 mt-0.5 text-xs text-green-600">
-                                          <MessageCircle className="w-3 h-3" />
-                                          <span>مرتبطة بمجموعة واتساب</span>
-                                        </div>
-                                      )}
-                                    </div>
-                                  ))}
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                      {isCustomCompany && (
-                        <div className="mt-1 text-xs text-blue-600 flex items-center gap-1">
-                          <Check className="w-3 h-3" />
-                          <span>تم اختيار "{formData.companyName}" كاسم مخصص</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Amount */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">المبلغ</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          inputMode="decimal"
-                          name="amount"
-                          value={formData.amount ? parseFloat(formData.amount).toLocaleString('en-US', {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: formData.amount.includes('.') ? 2 : 0
-                          }) : ''}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left pl-10"
-                          placeholder="0.00"
-                          required
-                          dir="ltr"
-                        />
-                        <div className="absolute left-3 top-2 text-gray-500">
-                          {formData.currency === 'USD' ? '$' : 'د.ع'}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Currency Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">العملة</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <label className="relative">
-                          <input
-                            type="radio"
-                            name="currency"
-                            checked={formData.currency === 'USD'}
-                            onChange={() => handleCurrencyChange('USD')}
-                            className="peer sr-only"
-                          />
-                          <div className="flex items-center gap-1.5 p-2 border rounded-lg cursor-pointer transition-all peer-checked:border-blue-200 peer-checked:bg-blue-50 hover:border-blue-200">
-                            <DollarSign className="w-4 h-4 text-blue-600" />
-                            <span className="text-sm font-medium text-gray-800">دولار أمريكي</span>
-                          </div>
-                        </label>
-                        <label className="relative">
-                          <input
-                            type="radio"
-                            name="currency"
-                            checked={formData.currency === 'IQD'}
-                            onChange={() => handleCurrencyChange('IQD')}
-                            className="peer sr-only"
-                          />
-                          <div className="flex items-center gap-1.5 p-2 border rounded-lg cursor-pointer transition-all peer-checked:border-purple-200 peer-checked:bg-purple-50 hover:border-purple-200">
-                            <CreditCard className="w-4 h-4 text-purple-600" />
-                            <span className="text-sm font-medium text-gray-800">دينار عراقي</span>
-                          </div>
-                        </label>
-                      </div>
-                    </div>
-
-                    {/* Exchange Rate */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">سعر الصرف</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="exchangeRate"
-                          value={formData.exchangeRate ? parseFloat(formData.exchangeRate).toLocaleString('en-US', {
-                            maximumFractionDigits: 2,
-                            minimumFractionDigits: formData.exchangeRate.includes('.') ? 2 : 0
-                          }) : ''}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left"
-                          placeholder="0.00"
-                          required
-                          dir="ltr"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Distribution Fields Section */}
-                {settings.useCustomColumns && (
-                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="p-1.5 bg-green-100 rounded-lg">
-                        <DollarSign className="w-4 h-4 text-green-600" />
-                      </div>
-                      <h4 className="font-medium text-gray-800">تقسيم المبلغ</h4>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Gates */}
-                      {settings.showGatesColumn && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                            {settings.gatesColumnLabel || 'بوابات'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name="gates"
-                              value={formData.gates ? parseFloat(formData.gates).toLocaleString('en-US', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: formData.gates.includes('.') ? 2 : 0
-                              }) : ''}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left pl-10 bg-gray-50"
-                              placeholder="0.00"
-                              readOnly
-                              dir="ltr"
-                            />
-                            <div className="absolute left-3 top-2 text-gray-500">
-                              {formData.currency === 'USD' ? '$' : 'د.ع'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Internal */}
-                      {settings.showInternalColumn && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                            {settings.internalColumnLabel || 'داخلي'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name="internal"
-                              value={formData.internal ? parseFloat(formData.internal).toLocaleString('en-US', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: formData.internal.includes('.') ? 2 : 0
-                              }) : ''}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left pl-10"
-                              placeholder="0.00"
-                              dir="ltr"
-                            />
-                            <div className="absolute left-3 top-2 text-gray-500">
-                              {formData.currency === 'USD' ? '$' : 'د.ع'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* External */}
-                      {settings.showExternalColumn && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                            {settings.externalColumnLabel || 'خارجي'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name="external"
-                              value={formData.external ? parseFloat(formData.external).toLocaleString('en-US', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: formData.external.includes('.') ? 2 : 0
-                              }) : ''}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left pl-10"
-                              placeholder="0.00"
-                              dir="ltr"
-                            />
-                            <div className="absolute left-3 top-2 text-gray-500">
-                              {formData.currency === 'USD' ? '$' : 'د.ع'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Fly */}
-                      {settings.showFlyColumn && (
-                        <div>
-                          <label className="block text-sm font-medium text-gray-600 mb-1.5">
-                            {settings.flyColumnLabel || 'فلاي'}
-                          </label>
-                          <div className="relative">
-                            <input
-                              type="text"
-                              name="fly"
-                              value={formData.fly ? parseFloat(formData.fly).toLocaleString('en-US', {
-                                maximumFractionDigits: 2,
-                                minimumFractionDigits: formData.fly.includes('.') ? 2 : 0
-                              }) : ''}
-                              onChange={handleChange}
-                              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 text-left pl-10"
-                              placeholder="0.00"
-                              dir="ltr"
-                            />
-                            <div className="absolute left-3 top-2 text-gray-500">
-                              {formData.currency === 'USD' ? '$' : 'د.ع'}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Distribution Error */}
-                    {distributionError && (
-                      <div className="mt-3 text-red-600 text-sm flex items-center gap-1.5">
-                        <AlertTriangle className="w-4 h-4" />
-                        <span>{distributionError}</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Additional Details Section */}
-                <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="p-1.5 bg-purple-100 rounded-lg">
-                      <FileText className="w-4 h-4 text-purple-600" />
-                    </div>
-                    <h4 className="font-medium text-gray-800">تفاصيل إضافية</h4>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Phone Number */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">رقم الهاتف</label>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleChange}
-                          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 pr-9"
-                          placeholder="رقم الهاتف"
-                          dir="ltr"
-                        />
-                        <div className="absolute right-2.5 top-2.5">
-                          <Phone className="w-4 h-4 text-gray-400" />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Safe Selection */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">الصندوق</label>
-                      <select
-                        name="safeId"
-                        value={formData.safeId}
-                        onChange={handleSafeChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800"
-                        required
-                      >
-                        <option value="">اختر صندوق...</option>
-                        {safes.map(safe => (
-                          <option key={safe.id} value={safe.id}>{safe.name}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Details */}
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1.5">تفاصيل</label>
-                      <textarea
-                        name="details"
-                        value={formData.details}
-                        onChange={handleChange}
-                        className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 text-gray-800 min-h-[100px]"
-                        placeholder="أي تفاصيل إضافية..."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-600">
-                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm">{error}</p>
-                </div>
-              )}
-
-              {/* Success Message */}
-              {success && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 text-green-600">
-                  <Check className="w-5 h-5 flex-shrink-0" />
-                  <p className="text-sm">{success}</p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="mt-8 flex flex-col sm:flex-row items-center justify-end gap-3 p-4 bg-gray-100 dark:bg-gray-800/50 rounded-2xl border-2 border-gray-200 dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="w-full sm:w-auto px-8 py-3 text-sm font-black text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition-all active:scale-95"
-                >
-                  إلغاء وتجاهل
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full sm:w-auto px-12 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl text-sm font-black transition-all shadow-lg hover:shadow-blue-500/20 transform active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                      <span>جاري الحفظ...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-5 h-5" />
-                      <span>حفظ كافة التغييرات</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
+      <div className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl">
+        <button
+          type="button"
+          onClick={() => setFormData(p => ({ ...p, currency: 'USD', amount: '', gates: '0', internal: '0', external: '0', fly: '0' }))}
+          className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black transition-all ${formData.currency === 'USD'
+            ? 'bg-emerald-500 text-white shadow-md'
+            : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}
+        >
+          <DollarSign className="w-3.5 h-3.5" />
+          <span>USD</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setFormData(p => ({ ...p, currency: 'IQD', amount: '', gates: '0', internal: '0', external: '0', fly: '0' }))}
+          className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-black transition-all ${formData.currency === 'IQD'
+            ? 'bg-orange-500 text-white shadow-md'
+            : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
+            }`}
+        >
+          <CreditCard className="w-3.5 h-3.5" />
+          <span>IQD</span>
+        </button>
       </div>
     </div>
   );
 
-  return ReactDOM.createPortal(modalContent, document.body);
-} 
+  return (
+    <ModernModal
+      isOpen={isOpen}
+      onClose={onClose}
+      size="lg"
+      headerContent={Header}
+      title=""
+      footer={
+        <div className="flex gap-3 w-full justify-end">
+          <button type="button" onClick={onClose} className="px-6 py-2.5 text-sm font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl">إلغاء</button>
+          <button onClick={handleSubmit} disabled={isSubmitting} className={`px-10 py-2.5 rounded-xl text-sm font-black text-white shadow-lg transition-all active:scale-95 disabled:opacity-50 ${formData.type === 'receipt' ? 'bg-emerald-600' : 'bg-rose-600'}`}>
+            {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : 'حفظ التعديلات'}
+          </button>
+        </div>
+      }
+    >
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-3 opacity-60">
+          <Loader2 className="w-8 h-8 animate-spin" />
+          <p className="text-sm font-bold">جاري تحميل بيانات السند...</p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {(error || success) && (
+            <div className={`p-4 rounded-xl flex items-center gap-3 border text-sm font-black animate-in slide-in-from-top-2 ${success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
+              {success ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+              <span>{success || error}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">الجهة المستهدفة</label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setShowCompanyDropdown(true); }}
+                    onFocus={() => setShowCompanyDropdown(true)}
+                    className="w-full h-11 px-10 border-2 border-gray-100 dark:border-gray-700 rounded-xl focus:border-blue-500 bg-transparent text-sm font-bold outline-none"
+                    placeholder="ابحث عن شركة..."
+                  />
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+
+                  {showCompanyDropdown && (
+                    <div className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-xl shadow-2xl max-h-60 overflow-y-auto">
+                      {filteredCompanies.length > 0 ? filteredCompanies.map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData(p => ({ ...p, companyId: c.id, companyName: c.name }));
+                            setSearchQuery(c.name);
+                            setShowCompanyDropdown(false);
+                            setIsCustomCompany(false);
+                          }}
+                          className="w-full px-4 py-2.5 text-right hover:bg-gray-50 dark:hover:bg-gray-700 border-b last:border-0 border-gray-100 dark:border-gray-700 flex items-center justify-between"
+                        >
+                          <span className="font-bold text-sm tracking-tight">{c.name}</span>
+                          {c.whatsAppGroupId && <MessageCircle className="w-3.5 h-3.5 text-green-500" />}
+                        </button>
+                      )) : (
+                        <div className="p-4 text-center text-xs text-gray-500 italic">لا نتائج مطابقة</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">رقم الهاتف</label>
+                  <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-transparent font-bold text-sm text-left" dir="ltr" />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">الصندوق</label>
+                  <select name="safeId" value={formData.safeId} onChange={handleSafeChange} className="w-full h-11 px-4 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-transparent font-bold text-sm outline-none cursor-pointer">
+                    {safes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1">ملاحظات</label>
+                <textarea name="details" value={formData.details} onChange={handleChange} className="w-full h-24 px-4 py-3 border-2 border-gray-100 dark:border-gray-700 rounded-xl bg-transparent font-bold text-sm resize-none" />
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest px-1 text-center block">المبلغ الإجمالي</label>
+                <input
+                  type="text"
+                  name="amount"
+                  value={formData.amount}
+                  onChange={handleChange}
+                  className={`w-full h-20 text-center px-4 rounded-2xl border-2 text-4xl font-black transition-all ${formData.currency === 'USD' ? 'border-emerald-100 bg-emerald-50/20 text-emerald-600 focus:border-emerald-500 dark:bg-emerald-900/10 dark:border-emerald-900' : 'border-orange-100 bg-orange-50/20 text-orange-600 focus:border-orange-500 dark:bg-orange-900/10 dark:border-orange-900'}`}
+                  dir="ltr"
+                />
+              </div>
+
+              {formData.type === 'receipt' ? (
+                <div className="space-y-4 pt-4 border-t-2 border-dashed border-gray-100 dark:border-gray-800">
+                  <h4 className="text-[10px] font-black text-gray-400 uppercase text-center">تحصيص المبلغ</h4>
+                  <div className={`grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-2xl border-2 ${distributionError ? 'bg-red-50/50 border-red-100 dark:bg-red-900/10 dark:border-red-900' : 'bg-gray-50/50 border-gray-100 dark:bg-gray-800/20 dark:border-gray-700'}`}>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black text-gray-400 uppercase text-center block">جات</label>
+                      <input type="text" readOnly value={parseFloat(formData.gates).toLocaleString()} className="w-full h-9 text-center rounded-lg bg-gray-200/50 dark:bg-gray-700/50 text-gray-500 font-bold border-0 text-xs" dir="ltr" />
+                    </div>
+                    {(['internal', 'external', 'fly'] as const).map(key => (
+                      <div className="space-y-1" key={key}>
+                        <label className="text-[9px] font-black text-gray-400 uppercase text-center block">
+                          {(settings as any)[`${key}ColumnLabel`] || key}
+                        </label>
+                        <input
+                          type="text"
+                          name={key}
+                          value={(formData as any)[key]}
+                          onChange={handleChange}
+                          className="w-full h-9 text-center rounded-lg bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 font-black text-xs outline-none focus:border-blue-500"
+                          dir="ltr"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {distributionError && <p className="text-[10px] font-black text-red-500 text-center">{distributionError}</p>}
+                </div>
+              ) : formData.currency === 'USD' && (
+                <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-100 dark:border-blue-800 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] font-black text-blue-500 uppercase">Rate</p>
+                    <p className="text-lg font-black text-blue-700 dark:text-blue-300">{parseFloat(formData.exchangeRate).toLocaleString()}</p>
+                  </div>
+                  <div className="text-left font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                    ≈ {(parseFloat(formData.amount || '0') * parseFloat(formData.exchangeRate)).toLocaleString()} <span className="text-[10px]">IQD</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </ModernModal>
+  );
+}

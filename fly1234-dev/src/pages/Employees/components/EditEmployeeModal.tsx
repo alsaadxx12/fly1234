@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import {
-  Users, X, Mail, Phone, DollarSign, Clock, Box, Loader2, Key, Lock, Calendar, Info, Check, Shield, UserCog, Save, AlertCircle, UserPlus, Building
+  Users, X, Mail, Phone, DollarSign, Clock, Box, Loader2, Key, Lock, Calendar, Info, Check, Shield, UserCog, Save, AlertCircle, Eye, EyeOff
 } from 'lucide-react';
 import { collection, doc, getDoc, updateDoc, query, orderBy, getDocs } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
+import AdminReauthModal from './AdminReauthModal';
+import ModernModal from '../../../components/ModernModal';
 
 type Props = {
   isOpen: boolean;
@@ -38,8 +40,6 @@ interface Department {
   name: string;
 }
 
-import ModernModal from '../../../components/ModernModal';
-
 export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdate }: Props) {
   const { t } = useLanguage();
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -62,6 +62,10 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [safes, setSafes] = useState<Array<{ id: string; name: string }>>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [isAdminReauthModalOpen, setIsAdminReauthModalOpen] = useState(false);
+  const [storedPassword, setStoredPassword] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -92,6 +96,7 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
             departmentId: data.departmentId || '',
           };
           setFormData(employeeData);
+          setStoredPassword(data.password || '');
         }
 
         const permissionsData = permissionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Permission[];
@@ -121,6 +126,8 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
       });
       setError(null);
       setSuccess(null);
+      setIsAdminAuthenticated(false);
+      setShowPassword(false);
     }
   }, [isOpen, employeeId]);
 
@@ -146,6 +153,10 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
         departmentId: formData.departmentId,
         updatedAt: new Date()
       };
+
+      if (formData.password) {
+        updateData.password = formData.password;
+      }
 
       await updateDoc(doc(db, 'employees', employeeId), updateData);
 
@@ -257,8 +268,47 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
                 </select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-gray-500 mr-2">كلمة المرور الجديدة</label>
-                <input type="password" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} placeholder="اتركها فارغة لعدم التغيير" minLength={8} className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+                <label className="text-xs font-bold text-gray-500 mr-2">كلمة المرور</label>
+                <div className="relative group/pass">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={isAdminAuthenticated ? (formData.password || storedPassword) : "********"}
+                    onChange={(e) => {
+                      if (isAdminAuthenticated) {
+                        setFormData(p => ({ ...p, password: e.target.value }));
+                      }
+                    }}
+                    placeholder={isAdminAuthenticated ? "كلمة المرور الحالية" : "انقر للقفل للعرض"}
+                    disabled={!isAdminAuthenticated}
+                    className={`w-full pr-4 pl-10 py-3 rounded-xl border transition appearance-none outline-none ${isAdminAuthenticated
+                        ? 'bg-gray-50 dark:bg-gray-900/50 border-gray-200 dark:border-gray-700 focus:border-blue-500'
+                        : 'bg-gray-100 dark:bg-gray-800 border-transparent cursor-not-allowed text-gray-400'
+                      }`}
+                  />
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                    {!isAdminAuthenticated ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsAdminReauthModalOpen(true)}
+                        className="p-1.5 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition"
+                        title="تحقق من الهوية لعرض كلمة المرور"
+                      >
+                        <Lock className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {isAdminAuthenticated && (
+                  <p className="text-[10px] text-blue-500 font-bold mt-1 px-2">يمكنك الآن رؤية وتعديل كلمة المرور</p>
+                )}
               </div>
               <div className="md:col-span-2 flex items-center justify-center p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
                 <label className="flex items-center gap-4 cursor-pointer group">
@@ -277,6 +327,16 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
           </>
         )}
       </div>
+
+      <AdminReauthModal
+        isOpen={isAdminReauthModalOpen}
+        onClose={() => setIsAdminReauthModalOpen(false)}
+        onSuccess={() => {
+          setIsAdminAuthenticated(true);
+          setShowPassword(true);
+        }}
+        description="يرجى إدخال كلمة مرور الإدمن الخاصة بك لعرض و تعديل كلمة مرور الموظف"
+      />
     </ModernModal>
   );
 }
