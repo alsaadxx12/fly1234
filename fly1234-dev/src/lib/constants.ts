@@ -15,7 +15,8 @@ import {
   FileClock,
   UserCheck,
   Briefcase,
-  Shield
+  Shield,
+  LayoutGrid
 } from 'lucide-react';
 
 export const menuItems = [
@@ -139,9 +140,10 @@ export const menuItems = [
         textKey: 'ربط API',
       },
       {
-        path: '/system-browser',
-        icon: Users,
-        textKey: 'تصفح النظام',
+        path: '/data-fly',
+        textKey: 'داتا فلاي (Data Fly)',
+        icon: LayoutGrid,
+        permissions: { page: 'الإعدادات والربط', actions: ['view'] }
       }
     ]
   }

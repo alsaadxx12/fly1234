@@ -77,8 +77,8 @@ const ModernModal: React.FC<ModernModalProps> = ({
               : 'bg-white border-gray-200'
               } 
               /* Mobile Styling: Bottom Sheet */
-              md:rounded-2xl md:max-h-[90vh] md:border ${sizeClasses[size]} md:shadow-2xl md:animate-none
-              max-md:fixed max-md:bottom-0 max-md:max-h-[95vh] max-md:rounded-t-3xl max-md:border-t
+              md:rounded-[1.25rem] md:max-h-[90vh] md:border ${sizeClasses[size]} md:shadow-2xl md:animate-none overflow-hidden
+              max-md:fixed max-md:bottom-0 max-md:max-h-[95vh] max-md:rounded-t-[1.5rem] max-md:border-t
               `}
           >
             {/* Header */}

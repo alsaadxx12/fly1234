@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useExchangeRate } from '../contexts/ExchangeRateContext';
@@ -495,21 +496,7 @@ const Accounts = () => {
         )}
       </div>
 
-      {/* Floating Action Button (FAB) - Mobile Only, Icon Only, Fixed */}
-      {activeView !== 'exchange' && (
-        <button
-          onClick={() => {
-            if (activeView === 'receipt') {
-              hasAddPermission ? setIsNewReceiptVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
-            } else {
-              hasAddPermission ? setIsNewPaymentVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
-            }
-          }}
-          className={`fixed bottom-24 left-6 z-[60] lg:hidden flex items-center justify-center w-16 h-16 rounded-full text-white font-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-4 border-white dark:border-gray-900 active:scale-95 transition-all ${activeView === 'receipt' ? 'bg-gradient-to-br from-emerald-500 to-green-600' : 'bg-gradient-to-br from-rose-500 to-red-600'}`}
-        >
-          <Plus className="w-8 h-8" />
-        </button>
-      )}
+
 
       {/* Modals */}
       <ModernModal isOpen={isPermissionErrorModalOpen} onClose={() => setIsPermissionErrorModalOpen(false)} title="تنبيه: صلاحيات محدودة" icon={<ShieldOff className="w-8 h-8 text-red-500" />}>
@@ -553,7 +540,7 @@ const Accounts = () => {
       <DeletedVouchersModal isOpen={isDeletedVouchersModalOpen} onClose={() => setIsDeletedVouchersModalOpen(false)} />
 
       <ModernModal isOpen={isExchangeRateModalOpen} onClose={() => setIsExchangeRateModalOpen(false)} title={t('updateExchangeRate')} icon={<DollarSign className="w-8 h-8 text-amber-500" />}>
-        <form onSubmit={handleUpdateRate} className="space-y-6">
+        <form onSubmit={handleUpdateRate} className="space-y-5">
           <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border-2 border-emerald-100 flex items-center justify-between">
             <span className="font-bold opacity-70">الحالي:</span>
             <span className="text-2xl font-black text-emerald-600">{currentRate.toLocaleString()} <small>د.ع</small></span>
@@ -569,6 +556,22 @@ const Accounts = () => {
           </div>
         </form>
       </ModernModal>
+      {/* Floating Action Button (FAB) - Mobile Only, Icon Only, Fixed via Portal */}
+      {activeView !== 'exchange' && createPortal(
+        <button
+          onClick={() => {
+            if (activeView === 'receipt') {
+              hasAddPermission ? setIsNewReceiptVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+            } else {
+              hasAddPermission ? setIsNewPaymentVoucherModalOpen(true) : (setPermissionErrorType('add'), setIsPermissionErrorModalOpen(true));
+            }
+          }}
+          className={`fixed bottom-24 left-6 z-[100] lg:hidden flex items-center justify-center w-16 h-16 rounded-full text-white font-black shadow-[0_20px_50px_rgba(0,0,0,0.3)] border-4 border-white dark:border-gray-900 active:scale-95 transition-all ${activeView === 'receipt' ? 'bg-gradient-to-br from-emerald-500 to-green-600' : 'bg-gradient-to-br from-rose-500 to-red-600'}`}
+        >
+          <Plus className="w-8 h-8" />
+        </button>,
+        document.body
+      )}
     </main>
   );
 };

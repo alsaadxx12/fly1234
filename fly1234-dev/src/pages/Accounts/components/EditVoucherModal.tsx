@@ -321,7 +321,7 @@ export default function EditVoucherModal({
           <p className="text-sm font-bold">جاري تحميل بيانات السند...</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {(error || success) && (
             <div className={`p-4 rounded-xl flex items-center gap-3 border text-sm font-black animate-in slide-in-from-top-2 ${success ? 'bg-emerald-50 border-emerald-100 text-emerald-700' : 'bg-red-50 border-red-100 text-red-700'}`}>
               {success ? <Check className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}

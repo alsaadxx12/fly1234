@@ -40,7 +40,7 @@ const ProfilePage = lazy(() => import('./pages/Profile'));
 const Leaves = lazy(() => import('./pages/Leaves'));
 const PersonalNotificationSettings = lazy(() => import('./pages/PersonalNotificationSettings'));
 const SecurityPage = lazy(() => import('./pages/Security'));
-const SystemBrowser = lazy(() => import('./pages/SystemBrowser'));
+const DataFly = lazy(() => import('./pages/SystemBrowser'));
 
 
 const LoadingFallback = () => {
@@ -134,7 +134,7 @@ function AppRoutes() {
                       <Route path="/leaves" element={<Leaves />} />
                       <Route path="/security" element={<SecurityPage />} />
                       <Route path="/notification-settings" element={<PersonalNotificationSettings />} />
-                      <Route path="/system-browser" element={<PermissionGuard requiredPermissions={{ page: 'الإعدادات والربط', actions: ['view'] }}><SystemBrowser /></PermissionGuard>} />
+                      <Route path="/data-fly" element={<PermissionGuard requiredPermissions={{ page: 'الإعدادات والربط', actions: ['view'] }}><DataFly /></PermissionGuard>} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Suspense>

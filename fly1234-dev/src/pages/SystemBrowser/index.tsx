@@ -17,6 +17,7 @@ import BrowserSettingsModal from './components/BrowserSettingsModal';
 import UserCardDetails from './components/UserCardDetails';
 import BroadcastModal from './components/BroadcastModal';
 import * as XLSX from 'xlsx';
+import { saveDataFlySettings, subscribeToDataFlySettings } from '../../lib/services/dataFlyService';
 
 const FN_URL = "https://us-central1-my-acc-3ee97.cloudfunctions.net/usersProxy";
 
@@ -41,9 +42,28 @@ const SystemBrowser: React.FC = () => {
     const { showNotification } = useNotification();
 
     // Settings State
-    const [endpoint, setEndpoint] = useState(localStorage.getItem('system_browser_endpoint') || 'https://accounts.fly4all.com/api/users');
-    const [token, setToken] = useState(localStorage.getItem('system_browser_token') || '');
+    const [endpoint, setEndpoint] = useState('https://accounts.fly4all.com/api/users');
+    const [token, setToken] = useState('');
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+    // Sync Settings with Firestore
+    useEffect(() => {
+        const unsubscribe = subscribeToDataFlySettings((settings) => {
+            if (settings.endpoint) setEndpoint(settings.endpoint);
+            if (settings.token) setToken(settings.token);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleSaveSettings = async (newEndpoint: string, newToken: string) => {
+        try {
+            await saveDataFlySettings({ endpoint: newEndpoint, token: newToken });
+            setIsSettingsOpen(false);
+            showNotification('تم حفظ الإعدادات بنجاح', 'success');
+        } catch (error) {
+            showNotification('فشل حفظ الإعدادات', 'error');
+        }
+    };
 
     // Data State (The "Full" Dataset)
     const [rawUsers, setRawUsers] = useState<any[]>([]);
@@ -139,13 +159,6 @@ const SystemBrowser: React.FC = () => {
         }
     }, [endpoint, token]);
 
-    const handleSaveSettings = (newEndpoint: string, newToken: string) => {
-        setEndpoint(newEndpoint);
-        setToken(newToken);
-        localStorage.setItem('system_browser_endpoint', newEndpoint);
-        localStorage.setItem('system_browser_token', newToken);
-        setIsSettingsOpen(false);
-    };
 
     useEffect(() => {
         if (token) {
@@ -416,30 +429,32 @@ const SystemBrowser: React.FC = () => {
                 }}
             />
 
-            {/* Selection Hub - Floating Bottom Bar */}
+            {/* Selection Hub - Floating Bottom Bar (Slimmer for mobile) */}
             {
                 (isAllSelected || selectedIds.size > 0) && (
-                    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-                        <div className="bg-slate-900/90 dark:bg-slate-800/90 backdrop-blur-xl border border-white/20 px-8 py-5 rounded-[2.5rem] shadow-2xl flex items-center gap-10 ring-1 ring-white/10">
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">تم اختيار</span>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-xl font-black text-white">{isAllSelected ? (filteredUsers.length - excludedIds.size).toLocaleString() : selectedIds.size.toLocaleString()}</span>
-                                    <span className="text-xs font-bold text-slate-400">سجل</span>
+                    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-sm">
+                        <div className="bg-slate-900/90 dark:bg-slate-800/95 backdrop-blur-xl border border-white/10 px-4 py-3 rounded-full shadow-2xl flex items-center justify-between gap-4 ring-1 ring-white/5">
+                            <div className="flex items-center gap-3 mr-2">
+                                <div className="flex flex-col">
+                                    <span className="text-[8px] font-black text-blue-400 uppercase tracking-tighter opacity-70">المختار</span>
+                                    <div className="flex items-center gap-1.5">
+                                        <span className="text-sm font-black text-white leading-none">{isAllSelected ? (filteredUsers.length - excludedIds.size).toLocaleString() : selectedIds.size.toLocaleString()}</span>
+                                        <span className="text-[9px] font-bold text-slate-400">سجل</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="h-10 w-px bg-white/10" />
+                            <div className="h-6 w-px bg-white/10" />
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setIsBroadcastOpen(true)}
-                                    className="flex items-center gap-3 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/20"
+                                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-full text-[11px] font-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/20"
                                 >
-                                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                                         <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                                     </svg>
-                                    <span>ارسال اعلان</span>
+                                    <span>ارسال</span>
                                 </button>
                                 <button
                                     onClick={() => {
@@ -447,9 +462,9 @@ const SystemBrowser: React.FC = () => {
                                         setSelectedIds(new Set());
                                         setExcludedIds(new Set());
                                     }}
-                                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-xs font-black transition-all active:scale-95 border border-white/10"
+                                    className="px-4 py-2 bg-white/5 hover:bg-white/10 text-slate-200 rounded-full text-[11px] font-black transition-all active:scale-95 border border-white/5"
                                 >
-                                    إلغاء التحديد
+                                    الغاء
                                 </button>
                             </div>
                         </div>
