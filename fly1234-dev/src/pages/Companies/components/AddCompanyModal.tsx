@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { Building2, DollarSign, CreditCard, Phone, Mail, Hash, MessageCircle, Users, Search, X } from 'lucide-react';
+import { Building2, DollarSign, CreditCard, Phone, Mail, Hash, MessageCircle, Users, Search, X, AlertCircle, Sparkles, Info } from 'lucide-react';
 import { CompanyFormData } from '../hooks/useCompanies';
 import useWhatsAppGroups from '../../../pages/Announcements/hooks/useWhatsAppGroups';
 import { useAuth } from '../../../contexts/AuthContext';
@@ -60,7 +60,6 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   const {
     whatsappGroups,
     isLoading: isLoadingGroups,
-    error: groupsError,
     fetchGroups
   } = useWhatsAppGroups(false, selectedAccount);
 
@@ -85,6 +84,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
         website: '',
         details: ''
       });
+      setSelectedWhatsAppGroup(null);
       setError(null);
       setSuccess(null);
     }
@@ -112,12 +112,12 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     setSuccess(null);
 
     try {
-      if (!localFormData.name.trim()) {
+      if (!actualFormData.name.trim()) {
         throw new Error('يرجى إدخال اسم الشركة');
       }
 
       const companiesRef = collection(db, 'companies');
-      const q = query(companiesRef, where('name', '==', localFormData.name.trim()));
+      const q = query(companiesRef, where('name', '==', actualFormData.name.trim()));
       const existingCompanies = await getDocs(q);
 
       if (!existingCompanies.empty) {
@@ -125,14 +125,14 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       }
 
       const companyData = {
-        name: localFormData.name.trim(),
-        paymentType: localFormData.paymentType,
-        companyId: localFormData.companyId || null,
-        whatsAppGroupId: selectedWhatsAppGroup?.id || null,
-        whatsAppGroupName: selectedWhatsAppGroup?.name || null,
-        phone: localFormData.phone || null,
-        website: localFormData.website || null,
-        details: localFormData.details || null,
+        name: actualFormData.name.trim(),
+        paymentType: actualFormData.paymentType,
+        companyId: actualFormData.companyId || null,
+        whatsAppGroupId: selectedWhatsAppGroup?.id || actualFormData.whatsAppGroupId || null,
+        whatsAppGroupName: selectedWhatsAppGroup?.name || actualFormData.whatsAppGroupName || null,
+        phone: actualFormData.phone || null,
+        website: actualFormData.website || null,
+        details: actualFormData.details || null,
         createdAt: serverTimestamp(),
         createdBy: employee.name,
         createdById: employee.id || ''
@@ -153,7 +153,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
       setTimeout(() => {
         onClose();
       }, 1500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding company:', error);
       setError(error instanceof Error ? error.message : 'فشل في إضافة الشركة');
     } finally {
@@ -173,8 +173,8 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     }
 
     if (onSubmit) {
-      const success = await onSubmit(e);
-      if (success) {
+      const successResult = await onSubmit(e);
+      if (successResult) {
         onClose();
       }
     } else {
@@ -183,379 +183,249 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   };
 
   return (
-    <>
-      <ModernModal
-        isOpen={isOpen}
-        onClose={onClose}
-        title="إضافة شركة جديدة"
-        description="أدخل تفاصيل الشركة الجديدة"
-        icon={<Building2 className="w-6 h-6" />}
-        iconColor="blue"
-        size="lg"
-        footer={
-          <div className="flex items-center justify-end gap-3">
-            <ModernButton
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-            >
-              {t('cancel')}
-            </ModernButton>
-            <ModernButton
-              type="submit"
-              variant="primary"
-              loading={isSubmitting || localIsSubmitting}
-              onClick={handleSubmit}
-            >
-              إضافة الشركة
-            </ModernButton>
-          </div>
-        }
-      >
-        <form onSubmit={handleSubmit} className="space-y-5">
-          {error && (
-            <div className={`p-4 rounded-xl border ${
-              theme === 'dark'
-                ? 'bg-red-900/30 border-red-700/50 text-red-400'
-                : 'bg-red-50 border-red-200 text-red-600'
-            }`}>
-              {error}
-            </div>
-          )}
-
-          {success && (
-            <div className={`p-4 rounded-xl border ${
-              theme === 'dark'
-                ? 'bg-green-900/30 border-green-700/50 text-green-400'
-                : 'bg-green-50 border-green-200 text-green-600'
-            }`}>
-              {success}
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <ModernInput
-              label="اسم الشركة"
-              type="text"
-              value={actualFormData.name}
-              onChange={(e) => actualSetFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="أدخل اسم الشركة..."
-              required
-            />
-
-            <ModernInput
-              label="معرف الشركة"
-              type="text"
-              value={actualFormData.companyId || ''}
-              onChange={(e) => actualSetFormData(prev => ({ ...prev, companyId: e.target.value }))}
-              placeholder="COMP001"
-              helperText="اختياري - يمكنك تركه فارغاً"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className={`block text-sm font-medium ${
-              theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-            }`}>
-              نوع التعامل
-              <span className="text-red-500 mr-1">*</span>
-            </label>
-            <div className="grid grid-cols-2 gap-3">
-              <label className="relative">
-                <input
-                  type="radio"
-                  name="paymentType"
-                  value="cash"
-                  checked={actualFormData.paymentType === 'cash'}
-                  onChange={() => actualSetFormData(prev => ({ ...prev, paymentType: 'cash' }))}
-                  className="peer sr-only"
-                />
-                <div className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  actualFormData.paymentType === 'cash'
-                    ? theme === 'dark'
-                      ? 'border-green-500 bg-green-500/20'
-                      : 'border-green-500 bg-green-50'
-                    : theme === 'dark'
-                      ? 'border-gray-600 hover:border-gray-500'
-                      : 'border-gray-300 hover:border-gray-400'
+    <ModernModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="إضافة شركة جديدة"
+      description="قم بتعبئة بيانات الشركة بدقة لضمان تكامل الحسابات والات شعارات"
+      icon={<Building2 className="w-8 h-8" />}
+      iconColor="blue"
+      size="xl"
+      footer={
+        <div className="flex items-center justify-end gap-3 px-1">
+          <ModernButton
+            type="button"
+            variant="secondary"
+            onClick={onClose}
+            className="px-8 py-3.5"
+          >
+            {t('cancel')}
+          </ModernButton>
+          <ModernButton
+            type="submit"
+            variant="primary"
+            loading={isSubmitting || localIsSubmitting}
+            onClick={handleSubmit}
+            className="px-12 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all"
+          >
+            إضافة الشركة
+          </ModernButton>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-8" dir="rtl">
+        {/* Messages */}
+        {(error || success) && (
+          <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+            {error && (
+              <div className={`p-4 rounded-2xl border flex items-center gap-4 ${theme === 'dark' ? 'bg-red-900/30 border-red-700/50 text-red-100' : 'bg-red-50 border-red-100 text-red-700'
                 }`}>
-                  <div className={`p-2 rounded-lg ${
-                    actualFormData.paymentType === 'cash'
-                      ? theme === 'dark'
-                        ? 'bg-green-500/30'
-                        : 'bg-green-100'
-                      : theme === 'dark'
-                        ? 'bg-gray-700'
-                        : 'bg-gray-100'
-                  }`}>
-                    <DollarSign className={`w-5 h-5 ${
-                      actualFormData.paymentType === 'cash'
-                        ? 'text-green-500'
-                        : theme === 'dark'
-                          ? 'text-gray-400'
-                          : 'text-gray-500'
-                    }`} />
-                  </div>
-                  <div>
-                    <div className={`font-bold ${
-                      theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
-                    }`}>نقدي</div>
-                    <div className={`text-xs ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>دفع فوري</div>
-                  </div>
-                </div>
-              </label>
-
-              <label className="relative">
-                <input
-                  type="radio"
-                  name="paymentType"
-                  value="credit"
-                  checked={actualFormData.paymentType === 'credit'}
-                  onChange={() => actualSetFormData(prev => ({ ...prev, paymentType: 'credit' }))}
-                  className="peer sr-only"
-                />
-                <div className={`flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
-                  actualFormData.paymentType === 'credit'
-                    ? theme === 'dark'
-                      ? 'border-orange-500 bg-orange-500/20'
-                      : 'border-orange-500 bg-orange-50'
-                    : theme === 'dark'
-                      ? 'border-gray-600 hover:border-gray-500'
-                      : 'border-gray-300 hover:border-gray-400'
-                }`}>
-                  <div className={`p-2 rounded-lg ${
-                    actualFormData.paymentType === 'credit'
-                      ? theme === 'dark'
-                        ? 'bg-orange-500/30'
-                        : 'bg-orange-100'
-                      : theme === 'dark'
-                        ? 'bg-gray-700'
-                        : 'bg-gray-100'
-                  }`}>
-                    <CreditCard className={`w-5 h-5 ${
-                      actualFormData.paymentType === 'credit'
-                        ? 'text-orange-500'
-                        : theme === 'dark'
-                          ? 'text-gray-400'
-                          : 'text-gray-500'
-                    }`} />
-                  </div>
-                  <div>
-                    <div className={`font-bold ${
-                      theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
-                    }`}>آجل</div>
-                    <div className={`text-xs ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                    }`}>دفع مؤجل</div>
-                  </div>
-                </div>
-              </label>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <ModernInput
-              label="رقم الهاتف"
-              type="tel"
-              value={actualFormData.phone}
-              onChange={(e) => actualSetFormData(prev => ({ ...prev, phone: e.target.value }))}
-              placeholder="07700000000"
-              icon={<Phone className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
-            />
-
-            <ModernInput
-              label="البريد الإلكتروني"
-              type="email"
-              value={actualFormData.website}
-              onChange={(e) => actualSetFormData(prev => ({ ...prev, website: e.target.value }))}
-              placeholder="example@company.com"
-              icon={<Mail className={`w-4 h-4 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`} />}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className={`block text-sm font-medium ${
-              theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-            }`}>
-              مجموعة واتساب
-            </label>
-            {selectedWhatsAppGroup ? (
-              <div className={`flex items-center justify-between p-4 rounded-xl border ${
-                theme === 'dark'
-                  ? 'bg-green-500/20 border-green-700'
-                  : 'bg-green-50 border-green-200'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${
-                    theme === 'dark' ? 'bg-green-500/30' : 'bg-green-100'
-                  }`}>
-                    <Users className={`w-5 h-5 ${
-                      theme === 'dark' ? 'text-green-400' : 'text-green-600'
-                    }`} />
-                  </div>
-                  <div>
-                    <div className={`font-medium ${
-                      theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
-                    }`}>{selectedWhatsAppGroup.name}</div>
-                    <div className={`text-xs ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                    }`}>{selectedWhatsAppGroup.id}</div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedWhatsAppGroup(null)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === 'dark'
-                      ? 'hover:bg-red-500/20 text-red-400'
-                      : 'hover:bg-red-100 text-red-600'
-                  }`}
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="p-2 bg-red-500/20 rounded-xl"><X className="w-5 h-5 text-red-500" /></div>
+                <span className="font-black text-sm">{error}</span>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowWhatsAppSearch(true)}
-                className={`w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-xl transition-colors ${
-                  theme === 'dark'
-                    ? 'border-gray-600 hover:border-green-500 hover:bg-green-500/10 text-gray-400 hover:text-green-400'
-                    : 'border-gray-300 hover:border-green-400 hover:bg-green-50 text-gray-500 hover:text-green-600'
-                }`}
-              >
-                <MessageCircle className="w-5 h-5" />
-                <span>اختيار مجموعة واتساب</span>
-              </button>
+            )}
+            {success && (
+              <div className={`p-4 rounded-2xl border flex items-center gap-4 ${theme === 'dark' ? 'bg-emerald-900/30 border-emerald-700/50 text-emerald-100' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                }`}>
+                <div className="p-2 bg-emerald-500/20 rounded-xl"><Sparkles className="w-5 h-5 text-emerald-500" /></div>
+                <span className="font-black text-sm">{success}</span>
+              </div>
             )}
           </div>
+        )}
 
-          <ModernInput
-            label="التفاصيل"
-            value={actualFormData.details}
-            onChange={(e) => actualSetFormData(prev => ({ ...prev, details: e.target.value }))}
-            placeholder="أي تفاصيل إضافية..."
-            multiline
-            rows={4}
-          />
-        </form>
-      </ModernModal>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Main Info */}
+          <div className="space-y-8">
+            <div className="grid grid-cols-1 gap-6">
+              <ModernInput
+                label="اسم الشركة"
+                type="text"
+                value={actualFormData.name}
+                onChange={(e) => actualSetFormData(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="اسم الشركة الرسمي..."
+                required
+                icon={<Building2 className="w-5 h-5 opacity-40" />}
+                iconPosition="right"
+              />
 
-      {/* WhatsApp Group Search Modal */}
-      {showWhatsAppSearch && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]" onClick={() => setShowWhatsAppSearch(false)}>
-          <div className={`rounded-2xl shadow-2xl p-6 max-w-md w-full mx-4 ${
-            theme === 'dark' ? 'bg-gray-800' : 'bg-gray-50'
-          }`} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-xl ${
-                  theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'
-                }`}>
-                  <Users className={`w-5 h-5 ${
-                    theme === 'dark' ? 'text-green-400' : 'text-green-600'
-                  }`} />
-                </div>
-                <h3 className={`text-lg font-bold ${
-                  theme === 'dark' ? 'text-gray-100' : 'text-gray-900'
-                }`}>اختيار مجموعة واتساب</h3>
-              </div>
-              <button
-                onClick={() => setShowWhatsAppSearch(false)}
-                className={`p-2 rounded-xl transition-colors ${
-                  theme === 'dark'
-                    ? 'hover:bg-gray-700 text-gray-400'
-                    : 'hover:bg-gray-100 text-gray-500'
-                }`}
-              >
-                <X className="w-5 h-5" />
-              </button>
+              <ModernInput
+                label="يوزر فلاي (ID)"
+                type="text"
+                value={actualFormData.companyId || ''}
+                onChange={(e) => actualSetFormData(prev => ({ ...prev, companyId: e.target.value }))}
+                placeholder="fly-user-001"
+                icon={<Hash className="w-5 h-5 opacity-40" />}
+                iconPosition="right"
+                helperText="اختياري - يوزر فلاي الخاص بالشركة لتسهيل التتبع"
+              />
             </div>
 
-            {!selectedAccount ? (
-              <div className={`p-4 rounded-xl border ${
-                theme === 'dark'
-                  ? 'bg-yellow-900/30 border-yellow-700 text-yellow-400'
-                  : 'bg-yellow-50 border-yellow-200 text-yellow-700'
-              }`}>
-                لم يتم اختيار حساب واتساب. يرجى اختيار حساب من القائمة العلوية أولاً.
-              </div>
-            ) : (
-              <>
-                <div className="relative mb-4">
+            <div className="space-y-4">
+              <label className={`block text-sm font-black tracking-tight ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>نظام الدفع</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <label className="group relative cursor-pointer">
                   <input
-                    type="text"
-                    value={whatsAppSearchQuery}
-                    onChange={(e) => setWhatsAppSearchQuery(e.target.value)}
-                    placeholder="البحث عن مجموعة..."
-                    className={`w-full px-4 py-3 pr-12 rounded-xl border focus:outline-none focus:ring-2 focus:ring-green-500 ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-gray-100'
-                        : 'bg-white border-gray-300 text-gray-900'
-                    }`}
+                    type="radio"
+                    name="paymentType"
+                    value="cash"
+                    checked={actualFormData.paymentType === 'cash'}
+                    onChange={() => actualSetFormData(prev => ({ ...prev, paymentType: 'cash' }))}
+                    className="sr-only"
                   />
-                  <Search className={`w-5 h-5 absolute right-4 top-3.5 ${
-                    theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                  }`} />
-                </div>
-
-                <div className={`max-h-64 overflow-y-auto border rounded-xl ${
-                  theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-                }`}>
-                  {isLoadingGroups ? (
-                    <div className="flex items-center justify-center p-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
-                    </div>
-                  ) : filteredGroups.length === 0 ? (
-                    <div className={`p-8 text-center ${
-                      theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  <div className={`h-full flex flex-col gap-4 p-5 rounded-[2rem] border-2 transition-all duration-300 ${actualFormData.paymentType === 'cash' ? 'border-emerald-500 bg-emerald-500/5 ring-4 ring-emerald-500/5' : theme === 'dark' ? 'border-gray-800 bg-gray-900/30' : 'border-gray-100 bg-gray-50/50'
                     }`}>
-                      لم يتم العثور على مجموعات
-                    </div>
-                  ) : (
-                    filteredGroups.map(group => (
-                      <div
-                        key={group.id}
-                        className={`flex items-center p-4 cursor-pointer transition-colors ${
-                          theme === 'dark'
-                            ? 'hover:bg-gray-700'
-                            : 'hover:bg-gray-50'
-                        }`}
-                        onClick={() => {
-                          setSelectedWhatsAppGroup({
-                            id: group.id,
-                            name: group.name
-                          });
-                          setShowWhatsAppSearch(false);
-                        }}
-                      >
-                        <div className={`p-2 rounded-lg mr-3 ${
-                          theme === 'dark' ? 'bg-green-500/20' : 'bg-green-100'
-                        }`}>
-                          <Users className={`w-5 h-5 ${
-                            theme === 'dark' ? 'text-green-400' : 'text-green-600'
-                          }`} />
-                        </div>
-                        <div>
-                          <div className={`font-medium ${
-                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
-                          }`}>{group.name}</div>
-                          <div className={`text-xs ${
-                            theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-                          }`}>{group.participants || '?'} مشارك</div>
-                        </div>
+                    <div className="flex items-center justify-between">
+                      <div className={`p-4 rounded-2xl ${actualFormData.paymentType === 'cash' ? 'bg-emerald-500 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                        <DollarSign className="w-7 h-7" />
                       </div>
-                    ))
-                  )}
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${actualFormData.paymentType === 'cash' ? 'border-emerald-500 bg-emerald-50' : 'border-gray-300'}`}>
+                        {actualFormData.paymentType === 'cash' && <div className="w-3 h-3 bg-emerald-500 rounded-full" />}
+                      </div>
+                    </div>
+                    <div>
+                      <p className={`font-black text-base ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>نقدي (Cash)</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">تسوية فورية</p>
+                    </div>
+                  </div>
+                </label>
+
+                <label className="group relative cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentType"
+                    value="credit"
+                    checked={actualFormData.paymentType === 'credit'}
+                    onChange={() => actualSetFormData(prev => ({ ...prev, paymentType: 'credit' }))}
+                    className="sr-only"
+                  />
+                  <div className={`h-full flex flex-col gap-4 p-5 rounded-[2rem] border-2 transition-all duration-300 ${actualFormData.paymentType === 'credit' ? 'border-orange-500 bg-orange-500/5 ring-4 ring-orange-500/5' : theme === 'dark' ? 'border-gray-800 bg-gray-900/30' : 'border-gray-100 bg-gray-50/50'
+                    }`}>
+                    <div className="flex items-center justify-between">
+                      <div className={`p-4 rounded-2xl ${actualFormData.paymentType === 'credit' ? 'bg-orange-500 text-white shadow-lg' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                        <CreditCard className="w-7 h-7" />
+                      </div>
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${actualFormData.paymentType === 'credit' ? 'border-orange-500 bg-orange-50' : 'border-gray-300'}`}>
+                        {actualFormData.paymentType === 'credit' && <div className="w-3 h-3 bg-orange-500 rounded-full" />}
+                      </div>
+                    </div>
+                    <div>
+                      <p className={`font-black text-base ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>آجل (Credit)</p>
+                      <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">حساب مفتوح</p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <ModernInput
+                label="رقم الهاتف"
+                type="tel"
+                value={actualFormData.phone}
+                onChange={(e) => actualSetFormData(prev => ({ ...prev, phone: e.target.value }))}
+                placeholder="0770 000 0000"
+                icon={<Phone className="w-5 h-5 opacity-40" />}
+                iconPosition="right"
+              />
+              <ModernInput
+                label="الموقع / الإيميل"
+                type="text"
+                value={actualFormData.website}
+                onChange={(e) => actualSetFormData(prev => ({ ...prev, website: e.target.value }))}
+                placeholder="www.company.com"
+                icon={<Mail className="w-5 h-5 opacity-40" />}
+                iconPosition="right"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            <div className="space-y-4">
+              <label className={`block text-sm font-black tracking-tight ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>ربط الواتساب</label>
+              <div className={`p-6 rounded-[2.5rem] border-2 border-dashed flex flex-col min-h-[440px] ${theme === 'dark' ? 'bg-emerald-500/5 border-emerald-900/30' : 'bg-emerald-50/20 border-emerald-100 shadow-xl shadow-emerald-500/5'
+                }`}>
+                {selectedWhatsAppGroup && !showWhatsAppSearch ? (
+                  <div className="space-y-6 animate-in fade-in zoom-in-95 duration-500 h-full flex flex-col justify-center text-center">
+                    <div className="w-24 h-24 bg-emerald-500/10 rounded-[2rem] flex items-center justify-center mx-auto mb-4 border-2 border-emerald-500/20 shadow-lg">
+                      <Users className="w-12 h-12 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h4 className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{selectedWhatsAppGroup.name}</h4>
+                      <div className="mt-2 inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500 text-white rounded-full text-[10px] font-black uppercase tracking-widest">
+                        مجموعة متصلة بنجاح
+                      </div>
+                    </div>
+                    <div className="pt-8 space-y-3">
+                      <button type="button" onClick={() => setShowWhatsAppSearch(true)} className="w-full py-4 rounded-2xl border-2 border-emerald-100 bg-white text-emerald-600 font-black text-sm hover:bg-emerald-50 transition-all">تغيير المجموعة</button>
+                      <button type="button" onClick={() => { setSelectedWhatsAppGroup(null); actualSetFormData(prev => ({ ...prev, whatsAppGroupId: null, whatsAppGroupName: null })); }} className="w-full py-4 rounded-2xl text-red-600 font-black text-xs opacity-60 hover:opacity-100 transition-all">إلغاء الربط</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4 flex flex-col h-full">
+                    <div className="relative group">
+                      <input
+                        type="text"
+                        value={whatsAppSearchQuery}
+                        onChange={(e) => { setWhatsAppSearchQuery(e.target.value); setShowWhatsAppSearch(true); }}
+                        placeholder="ابحث عن اسم المجموعة..."
+                        className={`w-full px-6 py-4 pr-14 rounded-2xl border-2 focus:outline-none transition-all text-sm font-black ${theme === 'dark'
+                          ? 'bg-gray-950/50 border-gray-800 text-white placeholder-gray-600 focus:border-emerald-500/50'
+                          : 'bg-white border-emerald-100 text-gray-900 placeholder-gray-400 focus:border-emerald-500/50'
+                          }`}
+                      />
+                      <Search className={`w-6 h-6 absolute right-5 top-4 transition-colors ${theme === 'dark' ? 'text-gray-700' : 'text-emerald-300'
+                        }`} />
+                    </div>
+
+                    <div className={`flex-1 overflow-y-auto rounded-[1.5rem] border-2 p-2 space-y-1 ${theme === 'dark' ? 'bg-gray-950/80 border-gray-800' : 'bg-white border-emerald-50 shadow-inner'
+                      }`}>
+                      {!selectedAccount ? (
+                        <div className="p-10 text-center space-y-4">
+                          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto opacity-30" />
+                          <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest leading-relaxed">يرجى اختيار حساب واتساب نشط أولاً</p>
+                        </div>
+                      ) : isLoadingGroups ? (
+                        <div className="p-16 text-center animate-pulse"><div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" /></div>
+                      ) : filteredGroups.length === 0 ? (
+                        <div className="p-16 text-center text-xs text-gray-400 font-black opacity-40">لا توجد مجموعات حالياً</div>
+                      ) : (
+                        filteredGroups.slice(0, 8).map(group => (
+                          <div key={group.id} className={`flex items-center gap-4 p-4 cursor-pointer transition-all rounded-2xl ${theme === 'dark' ? 'hover:bg-emerald-500/10' : 'hover:bg-emerald-50'
+                            }`} onClick={() => { setSelectedWhatsAppGroup({ id: group.id, name: group.name }); setShowWhatsAppSearch(false); }}>
+                            <div className={`p-3 rounded-xl ${theme === 'dark' ? 'bg-gray-900' : 'bg-emerald-100'}`}><Users className="w-5 h-5 text-emerald-600" /></div>
+                            <div className="flex-1 min-w-0">
+                              <div className={`font-black text-sm truncate ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>{group.name}</div>
+                              <div className="text-[10px] text-gray-500 font-bold uppercase">{group.participants || '0'} مشارك</div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className={`mt-auto p-4 rounded-2xl flex items-center gap-3 ${theme === 'dark' ? 'bg-gray-900/50' : 'bg-white/60'}`}>
+                  <Info className="w-4 h-4 text-emerald-600 opacity-60" />
+                  <p className="text-[9px] text-emerald-800/60 font-black uppercase tracking-widest leading-relaxed">سيصل التنبيه عند تعديل القيود المالية مباشرة للمجموعة المربوطة</p>
                 </div>
-              </>
-            )}
+              </div>
+            </div>
+
+            <ModernInput
+              label="تفاصيل وملاحظات"
+              value={actualFormData.details}
+              onChange={(e) => actualSetFormData(prev => ({ ...prev, details: e.target.value }))}
+              placeholder="اكتب ملاحظاتك هنا..."
+              multiline
+              rows={4}
+              icon={<Info className="w-5 h-5 opacity-40" />}
+              iconPosition="right"
+            />
           </div>
         </div>
-      )}
-    </>
+      </form>
+    </ModernModal>
   );
 };
 

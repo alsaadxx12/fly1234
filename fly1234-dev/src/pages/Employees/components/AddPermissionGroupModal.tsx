@@ -3,7 +3,8 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { useAuth } from '../../../contexts/AuthContext';
 import { collection, addDoc, serverTimestamp, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
-import { X, CircleAlert as AlertCircle, Shield, CircleCheck as CheckCircle2, Lock, Building2, Users, Wallet, Box, Check, Megaphone, Settings, Save, Loader as Loader2, Star, ShieldCheck, Info, Home, Plane, CheckSquare, TrendingUp, DollarSign, Link as LinkIcon, CreditCard, AlertTriangle } from 'lucide-react';
+import { CircleAlert as AlertCircle, CircleCheck as CheckCircle2, Building2, Users, Wallet, Box, Check, Megaphone, Settings, Save, Loader as Loader2, Star, Info, Home, Plane, CheckSquare, TrendingUp, DollarSign, Link as LinkIcon, CreditCard, AlertTriangle } from 'lucide-react';
+import ModernModal from '../../../components/ModernModal';
 
 interface Permission {
   view?: boolean;
@@ -78,7 +79,7 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
         [permission]: false
       }), {});
     });
-    
+
     setFormData(prev => ({ ...prev, permissions: initialPermissions }));
   }, [webWindows]);
 
@@ -168,11 +169,11 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
       }
     }));
   };
-  
+
   // Function to toggle all permissions for a window
   const toggleAllPermissions = (windowName: string, checked: boolean) => {
     const windowPermissions = webWindows.find(w => w.name === windowName)?.permissions || [];
-    
+
     setFormData(prev => ({
       ...prev,
       permissions: {
@@ -189,7 +190,7 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
   const areAllPermissionsEnabled = (windowName: string) => {
     const windowPermissions = webWindows.find(w => w.name === windowName)?.permissions || [];
     const currentPermissions = formData.permissions[windowName] || {};
-    
+
     return windowPermissions.every(permission => currentPermissions[permission]);
   };
 
@@ -211,253 +212,208 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
     return <Settings className="w-4 h-4 text-indigo-600" />;
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl transform transition-all max-h-[90vh] flex flex-col">
-        {/* Header with gradient background */}
-        <div className="relative p-4 text-white overflow-hidden" style={{ backgroundColor: 'rgb(35 0 90)' }}>
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gray-50/10 rounded-full -mt-32 -mr-32 blur-2xl"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-gray-50/5 rounded-full -mb-32 -ml-32 blur-2xl"></div>
-          
-          <div className="flex items-center justify-between relative z-10">
-            <div className="flex items-center gap-4">
-              <div className="p-2 bg-gray-50/20 rounded-lg">
-                <ShieldCheck className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">إضافة مجموعة صلاحيات</h3>
-                <p className="text-white/80 text-xs">تحديد صلاحيات الوصول للمستخدمين</p>
-              </div>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-1.5 text-white/80 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
+    <ModernModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="إضافة مجموعة صلاحيات"
+      maxWidth="max-w-3xl"
+    >
+      <div className="flex flex-col h-full">
+        {error && (
+          <div className="p-4 bg-red-50 text-red-700 rounded-lg mb-4 flex items-center gap-2 text-sm border border-red-100">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p>{error}</p>
           </div>
-        </div>
-        
-        <div className="p-4 flex flex-col overflow-hidden flex-1">
-          {error && (
-            <div className="p-4 bg-red-50 text-red-700 rounded-lg mb-4 flex items-center gap-2 text-sm border border-red-100">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p>{error}</p>
-            </div>
-          )}
-          
-          {success && (
-            <div className="p-4 bg-green-50 text-green-700 rounded-lg mb-4 flex items-center gap-2 text-sm border border-green-100">
-              <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-              <p>{success}</p>
-            </div>
-          )}
+        )}
 
-          <form onSubmit={handleSubmit} className="flex flex-col h-full space-y-4 overflow-hidden">
-            <div className="grid grid-cols-1 gap-4 overflow-hidden">
-              {/* Group Information */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      اسم المجموعة
-                      <span className="text-red-500">*</span>
+        {success && (
+          <div className="p-4 bg-green-50 text-green-700 rounded-lg mb-4 flex items-center gap-2 text-sm border border-green-100">
+            <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
+            <p>{success}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="flex flex-col h-full space-y-4">
+          <div className="grid grid-cols-1 gap-4">
+            {/* Group Information */}
+            <div className="bg-white dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
+                    اسم المجموعة
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: مدير، محاسب..."
+                    value={formData.name}
+                    onChange={(e) => {
+                      const newName = e.target.value;
+                      setFormData(prev => ({ ...prev, name: newName }));
+                      if (newName.toLowerCase() === 'admin') {
+                        setIsAdmin(true);
+                      }
+                    }}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold"
+                    required
+                  />
+                </div>
+
+                <div className="flex items-center">
+                  <div className="p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-900/20 w-full">
+                    <label className="flex items-center gap-3 cursor-pointer">
+                      <div
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${isAdmin ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-700'
+                          }`}
+                        onClick={() => setIsAdmin(!isAdmin)}
+                      >
+                        <span
+                          className={`${isAdmin ? '-translate-x-6' : '-translate-x-1'
+                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                        />
+                      </div>
+                      <div>
+                        <span className="font-bold text-gray-800 dark:text-white flex items-center gap-1.5">
+                          <Star className="w-4 h-4 text-amber-500" />
+                          مدير النظام
+                        </span>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400">
+                          يمنح جميع الصلاحيات في النظام
+                        </p>
+                      </div>
                     </label>
-                    <input
-                      type="text"
-                      placeholder="مثال: مدير، محاسب..."
-                      value={formData.name}
-                      onChange={(e) => {
-                        const newName = e.target.value;
-                        setFormData(prev => ({ ...prev, name: newName }));
-                        // Auto-enable isAdmin if name is "admin"
-                        if (newName.toLowerCase() === 'admin') {
-                          setIsAdmin(true);
+                  </div>
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="mt-4 p-3 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100/50 dark:border-amber-900/20 rounded-xl">
+                  <div className="flex items-start gap-2">
+                    <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <div className="text-[10px] text-amber-800 dark:text-amber-400 font-bold">
+                      <p className="mb-1">تم تفعيل صلاحيات المدير</p>
+                      <p>سيتم منح جميع الصلاحيات تلقائياً لهذه المجموعة</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Windows Permissions */}
+            <div className="space-y-3 max-h-[40vh] md:max-h-[50vh] overflow-y-auto px-1 custom-scrollbar text-right" dir="rtl">
+              {webWindows.map((window) => (
+                <div key={window.id} className="bg-white dark:bg-gray-800/50 rounded-2xl p-4 border border-gray-100 dark:border-gray-700 shadow-sm">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+                        {getWindowIcon(window.name)}
+                      </div>
+                      <span className="font-bold text-gray-800 dark:text-white">{window.name}</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isAdmin) {
+                          toggleAllPermissions(window.name, !areAllPermissionsEnabled(window.name));
                         }
                       }}
-                      className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50 text-gray-900 shadow-sm"
-                      required
-                    />
+                      disabled={isAdmin}
+                      className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${isAdmin
+                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                          : areAllPermissionsEnabled(window.name)
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100'
+                        }`}
+                    >
+                      {areAllPermissionsEnabled(window.name) ? 'إلغاء الكل' : 'تحديد الكل'}
+                    </button>
                   </div>
-                  
-                  <div className="flex items-center">
-                    <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-100 w-full">
-                      <label className="flex items-center gap-3 cursor-pointer">
-                        <div
-                          className="relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                          style={{ backgroundColor: isAdmin ? '#4f46e5' : '#d1d5db' }}
-                          onClick={() => setIsAdmin(!isAdmin)}
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {window.permissions.sort((a, b) => {
+                      const order = { 'view': 0, 'add': 1, 'edit': 2, 'delete': 3 };
+                      const aOrder = order[a as keyof typeof order] ?? 4;
+                      const bOrder = order[b as keyof typeof order] ?? 4;
+                      return aOrder - bOrder;
+                    }).map((permission) => {
+                      const currentPermissions = formData.permissions[window.name] || {};
+                      const isChecked = currentPermissions[permission];
+
+                      return (
+                        <button
+                          key={permission}
+                          type="button"
+                          onClick={() => {
+                            if (!isAdmin) {
+                              handlePermissionChange(window.name, permission, !isChecked);
+                            }
+                          }}
+                          disabled={isAdmin}
+                          className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-all border ${isAdmin || isChecked
+                              ? (
+                                permission === 'view' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100' :
+                                  permission === 'add' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100' :
+                                    permission === 'edit' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border-orange-100' :
+                                      permission === 'delete' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100' :
+                                        'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100'
+                              )
+                              : 'bg-gray-50 dark:bg-gray-900/20 text-gray-500 border-gray-100 dark:border-gray-700 hover:bg-gray-100'
+                            }`}
                         >
-                          <span
-                            className={`${
-                              isAdmin ? 'translate-x-1' : 'translate-x-7'
-                            } inline-block h-4 w-4 transform rounded-full bg-gray-50 transition-transform`}
-                          />
-                        </div>
-                        <div>
-                          <span className="font-medium text-gray-800 flex items-center gap-1.5">
-                            <Star className="w-4 h-4 text-amber-500" />
-                            مدير النظام
-                          </span>
-                          <p className="text-xs text-gray-500">
-                            يمنح جميع الصلاحيات في النظام
-                          </p>
-                        </div>
-                      </label>
-                    </div>
+                          {(isAdmin || isChecked) && <Check className="w-3 h-3" />}
+                          {permission === 'view' ? 'عرض' :
+                            permission === 'add' ? 'اضافة' :
+                              permission === 'edit' ? 'تعديل' :
+                                permission === 'delete' ? 'حذف' :
+                                  permission === 'print' ? 'طباعة' :
+                                    permission === 'reset' ? 'تدوير' :
+                                      permission === 'currency' ? 'عملة' :
+                                        permission === 'settlement' ? 'تحاسب' :
+                                          permission === 'confirm' ? 'تأكيد' :
+                                            permission === 'auditTransfer' ? 'تدقيق' :
+                                              permission === 'auditEntry' ? 'ادخال' :
+                                                permission === 'audit' ? 'تدقيق' :
+                                                  permission === 'filter' ? 'فلترة' :
+                                                    permission}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
-
-                {/* Admin Notice */}
-                {isAdmin && (
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <div className="text-xs text-amber-800">
-                        <p className="font-semibold mb-1">تم تفعيل صلاحيات المدير</p>
-                        <p>سيتم منح جميع الصلاحيات تلقائياً لهذه المجموعة</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Windows Permissions */}
-              <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm overflow-y-auto" style={{ maxHeight: 'calc(70vh - 250px)' }}>
-                <div className="grid grid-cols-1 gap-3">
-                  {webWindows.map((window) => (
-                    <div key={window.id} className="bg-white rounded-lg p-3 border border-gray-200 shadow-sm hover:shadow-md transition-all">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="p-2 bg-gradient-to-br from-indigo-100 to-indigo-50 rounded-lg shadow-inner">
-                            {getWindowIcon(window.name)}
-                          </div>
-                          <span className="font-medium text-gray-800">{window.name}</span>
-                        </div>
-                        
-                        <label className={`flex items-center gap-1.5 px-2 py-1 rounded-lg transition-colors text-xs ${
-                          isAdmin
-                            ? 'bg-gray-100 cursor-not-allowed opacity-50'
-                            : 'bg-blue-50 cursor-pointer hover:bg-blue-100'
-                        }`}>
-                          <input
-                            type="checkbox"
-                            checked={areAllPermissionsEnabled(window.name)}
-                            onChange={(e) => {
-                              if (!isAdmin) {
-                                toggleAllPermissions(window.name, e.target.checked);
-                              }
-                            }}
-                            className="w-3.5 h-3.5 rounded text-blue-600 focus:ring-blue-500 cursor-pointer"
-                            disabled={isAdmin}
-                          />
-                          <span className={`font-medium ${isAdmin ? 'text-gray-500' : 'text-blue-600'}`}>تحديد الكل</span>
-                        </label>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-2">
-                        {window.permissions.sort((a, b) => {
-                          // Custom sort order: view first, then add, edit, delete, and others
-                          const order = { 'view': 0, 'add': 1, 'edit': 2, 'delete': 3 };
-                          const aOrder = order[a as keyof typeof order] ?? 4;
-                          const bOrder = order[b as keyof typeof order] ?? 4;
-                          return aOrder - bOrder;
-                        }).map((permission) => {
-                          const currentPermissions = formData.permissions[window.name] || {};
-                          const isChecked = currentPermissions[permission];
-                          
-                          return (
-                            <label 
-                              key={permission}
-                              className="flex items-center gap-1.5 cursor-pointer group hover:opacity-90 transition-all"
-                            >
-                              <input
-                                type="checkbox"
-                                checked={isAdmin || isChecked}
-                                onChange={(e) => {
-                                  if (!isAdmin) {
-                                    handlePermissionChange(window.name, permission, e.target.checked);
-                                  }
-                                }}
-                                className="sr-only peer"
-                                disabled={isAdmin}
-                              />
-                              <span className={`px-2 py-1.5 text-xs rounded-lg transition-all w-full text-center font-medium ${
-                                isAdmin || isChecked ? (
-                                  permission === 'view' ? 'bg-green-100 text-green-700 border border-green-200 shadow-sm' :
-                                  permission === 'add' ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-sm' :
-                                  permission === 'edit' ? 'bg-orange-100 text-orange-700 border border-orange-200 shadow-sm' :
-                                  permission === 'delete' ? 'bg-red-100 text-red-700 border border-red-200 shadow-sm' :
-                                  permission === 'print' ? 'bg-purple-100 text-purple-700 border border-purple-200 shadow-sm' :
-                                  permission === 'reset' ? 'bg-amber-100 text-amber-700 border border-amber-200 shadow-sm' :
-                                  permission === 'currency' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm' :
-                                  permission === 'settlement' ? 'bg-sky-100 text-sky-700 border border-sky-200 shadow-sm' :
-                                  permission === 'confirm' ? 'bg-teal-100 text-teal-700 border border-teal-200 shadow-sm' :
-                                  permission === 'auditTransfer' ? 'bg-cyan-100 text-cyan-700 border border-cyan-200 shadow-sm' :
-                                  permission === 'auditEntry' ? 'bg-fuchsia-100 text-fuchsia-700 border border-fuchsia-200 shadow-sm' :
-                                  permission === 'audit' ? 'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm' :
-                                  permission === 'filter' ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 shadow-sm' :
-                                  'bg-indigo-100 text-indigo-700 border border-indigo-200 shadow-sm'
-                                ) : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 hover:border-gray-300'
-                              } group-hover:shadow-sm flex items-center justify-center`}>
-                                <Check className={`w-3 h-3 mr-0.5 ${(isAdmin || isChecked) ? 'opacity-100' : 'opacity-0'}`} />
-                                {permission === 'view' ? 'عرض' :
-                                 permission === 'add' ? 'اضافة' :
-                                 permission === 'edit' ? 'تعديل' :
-                                 permission === 'delete' ? 'حذف' :
-                                 permission === 'print' ? 'طباعة' :
-                                 permission === 'reset' ? 'تدوير' :
-                                 permission === 'currency' ? 'عملة' :
-                                 permission === 'settlement' ? 'تحاسب' :
-                                 permission === 'confirm' ? 'تأكيد' :
-                                 permission === 'auditTransfer' ? 'تدقيق' :
-                                 permission === 'auditEntry' ? 'ادخال' :
-                                 permission === 'audit' ? 'تدقيق' :
-                                 permission === 'filter' ? 'فلترة' :
-                                 permission}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Footer with buttons */}
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-200 mt-auto sticky bottom-0 bg-gray-50 pb-2 z-10">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                {t('cancel')}
-              </button>
-              <button
-                type="submit"
-                disabled={isLoading || !formData.name}
-                className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-indigo-600 to-indigo-700 rounded-lg hover:from-indigo-700 hover:to-indigo-800 transition-all shadow-md disabled:opacity-50"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                    <span>جاري الإضافة...</span>
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-5 h-5" />
-                    <span>إضافة المجموعة</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="mt-auto pt-6 flex gap-3">
+            <button
+              type="submit"
+              disabled={isLoading || !formData.name}
+              className="flex-1 flex items-center justify-center gap-2 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>جاري الإضافة...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  <span>إضافة المجموعة</span>
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-2xl font-bold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all"
+            >
+              {t('cancel')}
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
+    </ModernModal>
   );
 }

@@ -29,8 +29,9 @@ import CompanySettings from './Settings/components/CompanySettings';
 import NotificationSettings from './Settings/components/NotificationSettings';
 import ThemeSettings from './Settings/components/ThemeSettings';
 import PrintTemplateEditor from './Settings/components/PrintTemplateEditor';
+import SecuritySettings from './Settings/components/SecuritySettings';
 
-type TabId = 'theme' | 'companies' | 'notifications' | 'whatsapp' | 'accounts' | 'print';
+type TabId = 'theme' | 'companies' | 'notifications' | 'whatsapp' | 'accounts' | 'print' | 'security';
 
 interface TabConfig {
   id: TabId;
@@ -102,6 +103,13 @@ function Settings() {
       icon: MessageCircle,
       description: 'إدارة حسابات الواتساب',
       category: 'communications'
+    },
+    {
+      id: 'security',
+      label: 'الأمان والحماية',
+      icon: Shield,
+      description: 'إعدادات البصمة والتحقق الحيوي',
+      category: 'general'
     },
   ];
 
@@ -191,17 +199,15 @@ function Settings() {
                             <button
                               key={tab.id}
                               onClick={() => setActiveTab(tab.id)}
-                              className={`w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg text-right ${
-                                isActive
+                              className={`w-full flex items-center gap-2 md:gap-3 p-2 md:p-3 rounded-lg text-right ${isActive
                                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                              }`}
+                                }`}
                             >
-                              <div className={`p-1.5 md:p-2 rounded-lg ${
-                                isActive
+                              <div className={`p-1.5 md:p-2 rounded-lg ${isActive
                                   ? 'bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400'
                                   : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
-                              }`}>
+                                }`}>
                                 <Icon className="w-4 h-4" />
                               </div>
                               <div className="flex-1 text-right min-w-0">
@@ -230,6 +236,7 @@ function Settings() {
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'whatsapp' && <WhatsAppSettings setActiveTab={setActiveTab} />}
             {activeTab === 'accounts' && <AccountSettings />}
+            {activeTab === 'security' && <SecuritySettings />}
           </div>
         </div>
       </div>

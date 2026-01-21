@@ -69,47 +69,60 @@ const ProfileLeaves: React.FC<ProfileLeavesProps> = ({ employeeId }) => {
     };
 
     return (
-        <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-            <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
-                <ClipboardList className="w-5 h-5" />
-                طلبات الإجازة
-            </h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+        <div className={`space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {loading ? (
-                    <p className="text-center py-4">جاري التحميل...</p>
+                    <div className="col-span-full py-12 flex justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+                    </div>
                 ) : leaves.length > 0 ? (
                     leaves.map(leave => (
-                        <div key={leave.id} className={`p-4 rounded-xl border ${theme === 'dark' ? 'border-white/5 bg-white/5' : 'border-gray-100 bg-gray-50/50'}`}>
-                            <div className="flex justify-between items-start mb-2">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${getStatusColor(leave.status)}`}>
-                                            {getStatusText(leave.status)}
-                                        </span>
-                                        <span className="text-[10px] opacity-60">
-                                            {leave.type === 'full_day' ? 'إجازة كاملة' : 'إجازة زمنية'}
-                                        </span>
+                        <div key={leave.id} className={`group p-5 rounded-2xl border transition-all ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white border-gray-100 shadow-sm'
+                            }`}>
+                            <div className="flex justify-between items-start mb-4">
+                                <div className="flex items-center gap-3">
+                                    <div className={`p-2.5 rounded-xl ${getStatusColor(leave.status)}`}>
+                                        {getStatusIcon(leave.status)}
                                     </div>
-                                    <div className="text-sm font-bold">
-                                        {leave.type === 'full_day' ? (
-                                            `${leave.startDate?.toLocaleDateString('ar-EG')} - ${leave.endDate?.toLocaleDateString('ar-EG')}`
-                                        ) : (
-                                            `${leave.date?.toLocaleDateString('ar-EG')} (${leave.startTime} - ${leave.endTime})`
-                                        )}
+                                    <div>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-[10px] font-black uppercase tracking-widest opacity-60`}>
+                                                {leave.type === 'full_day' ? 'إجازة كاملة' : 'إجازة زمنية'}
+                                            </span>
+                                        </div>
+                                        <div className={`text-sm font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
+                                            {leave.type === 'full_day' ? (
+                                                `${leave.startDate?.toLocaleDateString('ar-EG')} - ${leave.endDate?.toLocaleDateString('ar-EG')}`
+                                            ) : (
+                                                `${leave.date?.toLocaleDateString('ar-EG')} (${leave.startTime} - ${leave.endTime})`
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                {getStatusIcon(leave.status)}
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black ${getStatusColor(leave.status)}`}>
+                                    {getStatusText(leave.status)}
+                                </span>
                             </div>
-                            <p className="text-xs opacity-70 line-clamp-2">{leave.reason}</p>
+
+                            <div className={`p-3 rounded-xl text-xs leading-relaxed ${theme === 'dark' ? 'bg-white/5 text-gray-400' : 'bg-gray-50 text-gray-600'}`}>
+                                {leave.reason}
+                            </div>
+
                             {leave.status === 'rejected' && leave.rejectionReason && (
-                                <div className="mt-2 p-2 rounded bg-red-500/5 text-[10px] text-red-500 border border-red-500/10">
-                                    سبب الرفض: {leave.rejectionReason}
+                                <div className="mt-3 p-3 rounded-xl bg-rose-500/10 text-[10px] text-rose-500 border border-rose-500/20 font-bold">
+                                    <span className="opacity-60">سبب الرفض:</span> {leave.rejectionReason}
                                 </div>
                             )}
                         </div>
                     ))
                 ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">لا توجد طلبات إجازة.</p>
+                    <div className={`col-span-full p-12 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 ${theme === 'dark' ? 'border-white/5' : 'border-gray-100'
+                        }`}>
+                        <div className="p-4 bg-gray-100 dark:bg-white/5 rounded-full">
+                            <ClipboardList className="w-8 h-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-bold">لا توجد طلبات إجازة</p>
+                    </div>
                 )}
             </div>
         </div>

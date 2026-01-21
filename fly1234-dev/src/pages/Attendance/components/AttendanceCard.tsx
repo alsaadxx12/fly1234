@@ -21,8 +21,7 @@ import { useAuth } from '../../../contexts/AuthContext';
 
 const AttendanceCard: React.FC = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const { employee, loading: authLoading } = useAuth();
+  const { showNotification } = useNotification();
   const {
     latestRecord,
     loading: attendanceLoading,
@@ -37,7 +36,20 @@ const AttendanceCard: React.FC = () => {
   const loading = authLoading || attendanceLoading;
   const isCheckedIn = latestRecord && latestRecord.status === 'checked-in';
 
-  const handleAction = () => {
+  const handleAction = async () => {
+    if (employee?.biometricsEnabled && employee.biometricCredentialId) {
+      try {
+        const { verifyBiometrics } = await import('../../../utils/biometrics');
+        await verifyBiometrics(employee.biometricCredentialId);
+      } catch (err: any) {
+        console.error('Biometric verification error:', err);
+        if (err.name !== 'NotAllowedError') {
+          showNotification('error', 'فشل التحقق الحيوي', 'يرجى المحاولة مرة أخرى أو التأكد من إعدادات جهازك');
+        }
+        return;
+      }
+    }
+
     if (isCheckedIn) {
       checkOut();
     } else {

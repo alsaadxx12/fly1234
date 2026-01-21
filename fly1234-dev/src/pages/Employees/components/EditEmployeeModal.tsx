@@ -39,6 +39,8 @@ interface Department {
   name: string;
 }
 
+import ModernModal from '../../../components/ModernModal';
+
 export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdate }: Props) {
   const { t } = useLanguage();
   const [formData, setFormData] = useState<EmployeeFormData>({
@@ -61,7 +63,6 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
   const [permissions, setPermissions] = useState<Permission[]>([]);
   const [safes, setSafes] = useState<Array<{ id: string; name: string }>>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
-
 
   useEffect(() => {
     const fetchData = async () => {
@@ -114,13 +115,13 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
     if (isOpen) {
       fetchData();
     } else {
-        setFormData({
-            fullName: '', email: '', password: '', phone: '',
-            salary: '', permissionGroupId: '', safeId: '', isActive: true, departmentId: '',
-            startTime: '09:00', endTime: '17:00'
-        });
-        setError(null);
-        setSuccess(null);
+      setFormData({
+        fullName: '', email: '', password: '', phone: '',
+        salary: '', permissionGroupId: '', safeId: '', isActive: true, departmentId: '',
+        startTime: '09:00', endTime: '17:00'
+      });
+      setError(null);
+      setSuccess(null);
     }
   }, [isOpen, employeeId]);
 
@@ -128,11 +129,11 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!employeeId) return;
-  
+
     setError(null);
     setSuccess(null);
     setIsSubmitting(true);
-  
+
     try {
       const updateData: any = {
         name: formData.fullName,
@@ -146,16 +147,16 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
         departmentId: formData.departmentId,
         updatedAt: new Date()
       };
-  
+
       await updateDoc(doc(db, 'employees', employeeId), updateData);
-  
+
       setSuccess('تم تحديث بيانات الموظف بنجاح');
       onUpdate();
-  
+
       setTimeout(() => {
         onClose();
       }, 1500);
-  
+
     } catch (error) {
       console.error('Error updating employee:', error);
       setError(error instanceof Error ? error.message : 'فشل في تحديث بيانات الموظف');
@@ -163,126 +164,123 @@ export default function EditEmployeeModal({ isOpen, onClose, employeeId, onUpdat
       setIsSubmitting(false);
     }
   };
-  
 
-  if (!isOpen) return null;
-
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform animate-scaleIn max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <form onSubmit={handleSubmit} autoComplete="off">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <UserCog className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+  return (
+    <ModernModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="تعديل بيانات الموظف"
+      description={formData.fullName}
+      icon={<UserCog className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+      size="md"
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+            إلغاء
+          </button>
+          <button onClick={handleSubmit} disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
+            {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            {isSubmitting ? 'جاري التحديث...' : 'حفظ التغييرات'}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+          </div>
+        ) : (
+          <>
+            {success && (
+              <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl flex items-center gap-2 border border-green-200 dark:border-green-800 text-sm">
+                <Check className="w-5 h-5" /> {success}
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">تعديل بيانات الموظف</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{formData.fullName}</p>
+            )}
+            {error && (
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl flex items-center gap-2 border border-red-200 dark:border-red-800 text-sm">
+                <AlertCircle className="w-5 h-5" /> {error}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">الاسم الكامل</label>
+                <input type="text" value={formData.fullName} onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))} placeholder="الاسم الكامل" required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">البريد الإلكتروني</label>
+                <input type="email" value={formData.email} disabled className="w-full px-4 py-3 bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl outline-none transition cursor-not-allowed text-gray-500" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">رقم الهاتف</label>
+                <input type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="رقم الهاتف" className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">الراتب</label>
+                <input type="text" value={formData.salary} onChange={(e) => setFormData(p => ({ ...p, salary: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="الراتب" className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">أوقات الدوام</label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="relative">
+                    <input type="time" value={formData.startTime} onChange={(e) => setFormData(p => ({ ...p, startTime: e.target.value }))} className="w-full text-center px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">من</span>
+                  </div>
+                  <div className="relative">
+                    <input type="time" value={formData.endTime} onChange={(e) => setFormData(p => ({ ...p, endTime: e.target.value }))} className="w-full text-center px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">إلى</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">مجموعة الصلاحيات</label>
+                <select value={formData.permissionGroupId} onChange={(e) => setFormData(p => ({ ...p, permissionGroupId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
+                  <option value="">اختر مجموعة الصلاحيات</option>
+                  {permissions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">الصندوق</label>
+                <select value={formData.safeId} onChange={(e) => setFormData(p => ({ ...p, safeId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
+                  <option value="">اختر الصندوق</option>
+                  {safes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">القسم</label>
+                <select value={formData.departmentId} onChange={(e) => setFormData(p => ({ ...p, departmentId: e.target.value }))} className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
+                  <option value="">اختر القسم</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-gray-500 mr-2">كلمة المرور الجديدة</label>
+                <input type="password" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} placeholder="اتركها فارغة لعدم التغيير" minLength={8} className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+              </div>
+              <div className="md:col-span-2 flex items-center justify-center p-4 bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl border border-blue-100/50 dark:border-blue-800/50">
+                <label className="flex items-center gap-4 cursor-pointer group">
+                  <div className="relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-300 shadow-inner"
+                    style={{ backgroundColor: formData.isActive ? '#10b981' : '#cbd5e1' }}
+                    onClick={() => setFormData(p => ({ ...p, isActive: !p.isActive }))}
+                  >
+                    <span className={`${formData.isActive ? 'translate-x-1.5' : 'translate-x-[2.1rem]'} inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-300 shadow-sm group-hover:scale-110`} />
+                  </div>
+                  <span className={`font-bold transition-colors duration-300 ${formData.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    {formData.isActive ? 'موظف نشط حالياً' : 'موظف غير نشط'}
+                  </span>
+                </label>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <div className="p-6 max-h-[70vh] overflow-y-auto">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-              </div>
-            ) : (
-              <>
-                {success && (
-                  <div className="p-3 bg-green-50 text-green-700 rounded-lg mb-4 flex items-center gap-2 border border-green-200 text-sm">
-                    <Check className="w-5 h-5" /> {success}
-                  </div>
-                )}
-                {error && (
-                  <div className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 flex items-center gap-2 border border-red-200 text-sm">
-                    <AlertCircle className="w-5 h-5" /> {error}
-                  </div>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <input type="text" name="name" value={formData.fullName} onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))} placeholder="الاسم الكامل" required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                    <input type="email" name="email" value={formData.email} disabled className="w-full text-center px-4 py-3 bg-gray-200 dark:bg-gray-800 border-2 border-gray-300 dark:border-gray-700 rounded-xl outline-none transition cursor-not-allowed text-gray-500" />
-                    <input type="tel" name="phone" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="رقم الهاتف (اختياري)" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                    <input type="text" name="salary" value={formData.salary} onChange={(e) => setFormData(p => ({ ...p, salary: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="الراتب (اختياري)" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">أوقات الدوام</label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="relative">
-                            <input
-                                type="time"
-                                name="startTime"
-                                value={formData.startTime}
-                                onChange={(e) => setFormData(p => ({ ...p, startTime: e.target.value }))}
-                                className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none"
-                            />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">من</span>
-                            </div>
-                            <div className="relative">
-                            <input
-                                type="time"
-                                name="endTime"
-                                value={formData.endTime}
-                                onChange={(e) => setFormData(p => ({ ...p, endTime: e.target.value }))}
-                                className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none"
-                            />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">إلى</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <select name="permissionGroupId" value={formData.permissionGroupId} onChange={(e) => setFormData(p => ({ ...p, permissionGroupId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                      <option value="">اختر مجموعة الصلاحيات</option>
-                      {permissions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                    </select>
-                    <div className="relative">
-                      <select name="safeId" value={formData.safeId} onChange={(e) => setFormData(p => ({ ...p, safeId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                        <option value="">اختر الصندوق</option>
-                        {safes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                      </select>
-                    </div>
-                    
-                     <select name="departmentId" value={formData.departmentId} onChange={(e) => setFormData(p => ({ ...p, departmentId: e.target.value }))} className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                      <option value="">اختر القسم</option>
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                    <div className="md:col-span-2">
-                       <input type="password" name="password" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} placeholder="كلمة المرور الجديدة (اتركها فارغة لعدم التغيير)" minLength={8} autoComplete="new-password" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                    </div>
-                    <div className="md:col-span-2 flex items-center justify-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
-                        <label className="flex items-center gap-3 cursor-pointer">
-                            <div className="relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200" style={{backgroundColor: formData.isActive ? '#10b981' : '#d1d5db'}}
-                            onClick={() => setFormData(p => ({ ...p, isActive: !p.isActive }))}
-                            >
-                                <span className={`${formData.isActive ? 'translate-x-1' : 'translate-x-7'} inline-block h-4 w-4 transform rounded-full bg-white transition-transform`} />
-                            </div>
-                            <span className="font-medium text-gray-800 dark:text-gray-200">
-                                {formData.isActive ? 'موظف نشط' : 'موظف غير نشط'}
-                            </span>
-                        </label>
-                    </div>
-                </div>
-              </>
-            )}
-          </div>
-          
-          <div className="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-              إلغاء
-            </button>
-            <button type="submit" disabled={isSubmitting} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
-              {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {isSubmitting ? 'جاري التحديث...' : 'حفظ التغييرات'}
-            </button>
-          </div>
-        </form>
+          </>
+        )}
       </div>
-    </div>,
-    document.body
+    </ModernModal>
+  );
+}
+document.body
   );
 }

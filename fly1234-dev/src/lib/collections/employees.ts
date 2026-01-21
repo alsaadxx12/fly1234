@@ -40,6 +40,8 @@ export interface Employee {
   shift?: 'morning' | 'evening' | 'night';
   startTime?: string;
   endTime?: string;
+  biometricsEnabled?: boolean;
+  biometricCredentialId?: string;
 }
 
 const COLLECTION_NAME = 'employees';

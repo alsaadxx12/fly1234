@@ -36,6 +36,8 @@ interface Permission {
   permissions: Record<string, string[] | boolean>;
 }
 
+import ModernModal from '../../../components/ModernModal';
+
 const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
   const { t } = useLanguage();
   const { currentUser } = useAuth();
@@ -66,14 +68,13 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
     if (isOpen) {
       fetchData();
     } else {
-        // Reset form when modal closes
-        setFormData({
-            fullName: '', email: '', password: '', phone: '',
-            salary: '', permissionGroupId: '', safeId: '',
-            branchId: '', departmentId: '', startTime: '09:00', endTime: '17:00'
-        });
-        setError(null);
-        setSuccess(null);
+      setFormData({
+        fullName: '', email: '', password: '', phone: '',
+        salary: '', permissionGroupId: '', safeId: '',
+        branchId: '', departmentId: '', startTime: '09:00', endTime: '17:00'
+      });
+      setError(null);
+      setSuccess(null);
     }
   }, [isOpen]);
 
@@ -93,7 +94,7 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
 
       const safesData = safesSnapshot.docs.map(doc => ({ id: doc.id, name: doc.data().name }));
       setSafesList(safesData);
-      
+
       const emails = employeesSnapshot.docs.map(doc => doc.data().email.toLowerCase());
       setExistingEmails(emails);
 
@@ -117,24 +118,23 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
     setSuccess(null);
     setIsLoading(true);
     localStorage.setItem('isCreatingUser', 'true');
-  
+
     try {
       if (existingEmails.includes(formData.email.toLowerCase())) {
         throw new Error('البريد الإلكتروني مستخدم بالفعل');
       }
-  
+
       if (formData.password.length < 8) {
         throw new Error('يجب أن تكون كلمة المرور 8 أحرف على الأقل');
       }
-  
-      // Get the current user (admin)
+
       const adminUser = auth.currentUser;
       if (!adminUser) {
         throw new Error('Admin user not authenticated');
       }
-  
+
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
-      
+
       const employeeData = {
         userId: userCredential.user.uid,
         name: formData.fullName,
@@ -150,19 +150,18 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
         branchId: formData.branchId,
         departmentId: formData.departmentId
       };
-  
+
       await addEmployee(employeeData as any);
       setSuccess('تم إضافة الموظف بنجاح');
-  
-      // Re-sign the admin user to ensure context continuity
+
       if (auth.currentUser?.uid !== adminUser.uid) {
-         await auth.updateCurrentUser(adminUser);
+        await auth.updateCurrentUser(adminUser);
       }
-  
+
       setTimeout(() => {
         onClose();
       }, 2000);
-  
+
     } catch (error) {
       console.error('Error adding employee:', error);
       const errorMessage = error instanceof Error
@@ -175,104 +174,96 @@ const AddEmployeeModal = ({ isOpen, onClose }: Props) => {
     }
   };
 
-  if (!isOpen) return null;
+  return (
+    <ModernModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="إضافة موظف جديد"
+      description="إضافة موظف جديد إلى النظام"
+      icon={<UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />}
+      size="md"
+      footer={
+        <div className="flex items-center justify-end gap-3 w-full">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-xl hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+            إلغاء
+          </button>
+          <button onClick={handleSubmit} disabled={isLoading} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {isLoading ? 'جاري الإضافة...' : 'إضافة الموظف'}
+          </button>
+        </div>
+      }
+    >
+      <div className="space-y-6">
+        {success && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-xl flex items-center gap-2 border border-green-200 dark:border-green-800 text-sm">
+            <Check className="w-5 h-5" /> {success}
+          </div>
+        )}
+        {error && (
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded-xl flex items-center gap-2 border border-red-200 dark:border-red-800 text-sm">
+            <AlertCircle className="w-5 h-5" /> {error}
+          </div>
+        )}
 
-  return createPortal(
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 animate-fadeIn" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform animate-scaleIn max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <form onSubmit={handleSubmit} autoComplete="off">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 mr-2">الاسم الكامل</label>
+            <input type="text" value={formData.fullName} onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))} placeholder="الاسم الكامل" required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 mr-2">البريد الإلكتروني</label>
+            <input type="email" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="البريد الإلكتروني" required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 mr-2">كلمة المرور</label>
+            <input type="password" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} placeholder="كلمة المرور" required minLength={8} className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 mr-2">رقم الهاتف</label>
+            <input type="tel" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="رقم الهاتف" className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-gray-500 mr-2">الراتب</label>
+            <input type="text" value={formData.salary} onChange={(e) => setFormData(p => ({ ...p, salary: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="الراتب" className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+          </div>
+
+          <div className="md:col-span-2 space-y-2">
+            <label className="block text-sm font-bold text-gray-700 dark:text-gray-300">أوقات الدوام</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <input type="time" value={formData.startTime} onChange={(e) => setFormData(p => ({ ...p, startTime: e.target.value }))} className="w-full text-center px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">من</span>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">إضافة موظف جديد</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">إضافة موظف جديد إلى النظام</p>
+              <div className="relative">
+                <input type="time" value={formData.endTime} onChange={(e) => setFormData(p => ({ ...p, endTime: e.target.value }))} className="w-full text-center px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">إلى</span>
               </div>
             </div>
-            <button type="button" onClick={onClose} className="p-2 text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-              <X className="w-5 h-5" />
-            </button>
           </div>
-          
-          <div className="p-6 max-h-[70vh] overflow-y-auto">
-            {success && (
-              <div className="p-3 bg-green-50 text-green-700 rounded-lg mb-4 flex items-center gap-2 border border-green-200 text-sm">
-                <Check className="w-5 h-5" /> {success}
-              </div>
-            )}
-            {error && (
-              <div className="p-3 bg-red-50 text-red-700 rounded-lg mb-4 flex items-center gap-2 border border-red-200 text-sm">
-                <AlertCircle className="w-5 h-5" /> {error}
-              </div>
-            )}
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input type="text" name="name" value={formData.fullName} onChange={(e) => setFormData(p => ({ ...p, fullName: e.target.value }))} placeholder="الاسم الكامل" required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                <input type="email" name="email" value={formData.email} onChange={(e) => setFormData(p => ({ ...p, email: e.target.value }))} placeholder="البريد الإلكتروني" required autoComplete="off" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                <input type="password" name="password" value={formData.password} onChange={(e) => setFormData(p => ({ ...p, password: e.target.value }))} placeholder="كلمة المرور" required minLength={8} autoComplete="new-password" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                <input type="tel" name="phone" value={formData.phone} onChange={(e) => setFormData(p => ({ ...p, phone: e.target.value }))} placeholder="رقم الهاتف (اختياري)" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                <input type="text" name="salary" value={formData.salary} onChange={(e) => setFormData(p => ({ ...p, salary: e.target.value.replace(/[^0-9]/g, '') }))} placeholder="الراتب (اختياري)" className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition" />
-                
-                <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">أوقات الدوام</label>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="relative">
-                        <input
-                            type="time"
-                            name="startTime"
-                            value={formData.startTime}
-                            onChange={(e) => setFormData(p => ({ ...p, startTime: e.target.value }))}
-                            className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none"
-                        />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">من</span>
-                        </div>
-                        <div className="relative">
-                        <input
-                            type="time"
-                            name="endTime"
-                            value={formData.endTime}
-                            onChange={(e) => setFormData(p => ({ ...p, endTime: e.target.value }))}
-                            className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none"
-                        />
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">إلى</span>
-                        </div>
-                    </div>
-                </div>
 
-                <select name="permissionGroupId" value={formData.permissionGroupId} onChange={(e) => setFormData(p => ({ ...p, permissionGroupId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                  <option value="">اختر مجموعة الصلاحيات</option>
-                  {permissions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <select name="safeId" value={formData.safeId} onChange={(e) => setFormData(p => ({ ...p, safeId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                  <option value="">اختر الصندوق</option>
-                  {safesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
-                <select name="branchId" value={formData.branchId} onChange={(e) => setFormData(p => ({ ...p, branchId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                  <option value="">اختر الفرع</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-                 <select name="departmentId" value={formData.departmentId} onChange={(e) => setFormData(p => ({ ...p, departmentId: e.target.value }))} required className="w-full text-center px-4 py-3 bg-gray-100 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition appearance-none">
-                  <option value="">اختر القسم</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-            </div>
-          </div>
-          
-          <div className="p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 flex items-center justify-end gap-3">
-            <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-bold text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-              إلغاء
-            </button>
-            <button type="submit" disabled={isLoading} className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg font-bold text-sm hover:bg-blue-700 transition disabled:opacity-50">
-              {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              {isLoading ? 'جاري الإضافة...' : 'إضافة الموظف'}
-            </button>
-          </div>
-        </form>
+          <select value={formData.permissionGroupId} onChange={(e) => setFormData(p => ({ ...p, permissionGroupId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition">
+            <option value="">اختر مجموعة الصلاحيات</option>
+            {permissions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <select value={formData.safeId} onChange={(e) => setFormData(p => ({ ...p, safeId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition">
+            <option value="">اختر الصندوق</option>
+            {safesList.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
+          <select value={formData.branchId} onChange={(e) => setFormData(p => ({ ...p, branchId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition">
+            <option value="">اختر الفرع</option>
+            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+          </select>
+          <select value={formData.departmentId} onChange={(e) => setFormData(p => ({ ...p, departmentId: e.target.value }))} required className="w-full px-4 py-3 bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl focus:border-blue-500 focus:ring-0 outline-none transition">
+            <option value="">اختر القسم</option>
+            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+        </div>
       </div>
-    </div>,
-    document.body
+    </ModernModal>
+  );
+};
+document.body
   );
 };
 

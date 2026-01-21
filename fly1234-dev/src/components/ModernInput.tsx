@@ -11,6 +11,7 @@ interface ModernInputProps {
   disabled?: boolean;
   error?: string;
   icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
   multiline?: boolean;
   rows?: number;
   helperText?: string;
@@ -28,6 +29,7 @@ const ModernInput: React.FC<ModernInputProps> = ({
   disabled = false,
   error,
   icon,
+  iconPosition = 'left',
   multiline = false,
   rows = 3,
   helperText,
@@ -36,13 +38,11 @@ const ModernInput: React.FC<ModernInputProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const baseInputClasses = `w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-    theme === 'dark'
+  const baseInputClasses = `w-full px-4 py-3 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 ${theme === 'dark'
       ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400'
       : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-  } ${error ? 'border-red-500 focus:ring-red-500' : ''} ${
-    disabled ? 'opacity-50 cursor-not-allowed' : ''
-  } ${icon ? 'pr-12' : ''}`;
+    } ${error ? 'border-red-500 focus:ring-red-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''
+    } ${icon ? (iconPosition === 'right' ? 'pr-12' : 'pl-12') : ''}`;
 
   const renderInput = () => {
     if (options) {
@@ -94,9 +94,8 @@ const ModernInput: React.FC<ModernInputProps> = ({
   return (
     <div className={`space-y-2 ${className}`}>
       {label && (
-        <label className={`block text-sm font-medium ${
-          theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
-        }`}>
+        <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'
+          }`}>
           {label}
           {required && <span className="text-red-500 mr-1">*</span>}
         </label>
@@ -104,7 +103,7 @@ const ModernInput: React.FC<ModernInputProps> = ({
       <div className="relative">
         {renderInput()}
         {icon && (
-          <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+          <div className={`absolute ${iconPosition === 'right' ? 'right-4' : 'left-4'} top-1/2 transform -translate-y-1/2 pointer-events-none`}>
             {icon}
           </div>
         )}
@@ -116,9 +115,8 @@ const ModernInput: React.FC<ModernInputProps> = ({
         </p>
       )}
       {helperText && !error && (
-        <p className={`text-sm ${
-          theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
-        }`}>
+        <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'
+          }`}>
           {helperText}
         </p>
       )}

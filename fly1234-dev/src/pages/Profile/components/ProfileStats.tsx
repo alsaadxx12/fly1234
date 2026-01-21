@@ -119,30 +119,41 @@ const ProfileStats: React.FC<ProfileStatsProps> = ({ employee }) => {
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg"><Award className="w-6 h-6 text-blue-500" /></div>
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">إجمالي النقاط</h4>
-                        <p className="text-2xl font-bold">{stats.points.toFixed(0)}</p>
+            <div className={`group p-8 rounded-[32px] border transition-all hover:scale-[1.02] ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'
+                }`}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-blue-500/10 rounded-2xl shadow-lg ring-4 ring-blue-500/5 group-hover:scale-110 transition-transform">
+                        <Award className="w-8 h-8 text-blue-500" />
+                    </div>
+                    <div className="text-center">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">إجمالي النقاط</h4>
+                        <p className={`text-4xl font-black ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{stats.points.toFixed(0)}</p>
                     </div>
                 </div>
             </div>
-            <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-green-100 dark:bg-green-900/30 rounded-lg"><DollarSign className="w-6 h-6 text-green-500" /></div>
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">قيمة النقاط (IQD)</h4>
-                        <p className="text-2xl font-bold">{pointsInIQD.toLocaleString()} د.ع</p>
+
+            <div className={`group p-8 rounded-[32px] border transition-all hover:scale-[1.02] ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'
+                }`}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-emerald-500/10 rounded-2xl shadow-lg ring-4 ring-emerald-500/5 group-hover:scale-110 transition-transform">
+                        <DollarSign className="w-8 h-8 text-emerald-500" />
+                    </div>
+                    <div className="text-center">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">قيمة النقاط المتوقعة</h4>
+                        <p className={`text-3xl font-black ${theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'}`}>{pointsInIQD.toLocaleString()} <span className="text-sm">د.ع</span></p>
                     </div>
                 </div>
             </div>
-            <div className={`p-6 rounded-2xl ${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-lg"><TrendingDown className="w-6 h-6 text-red-500" /></div>
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400">خصومات الراتب (نقد)</h4>
-                        <p className="text-2xl font-bold">{totalSalaryDeduction.toLocaleString()} د.ع</p>
+
+            <div className={`group p-8 rounded-[32px] border transition-all hover:scale-[1.02] ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-white border-gray-100 shadow-xl shadow-gray-200/50'
+                }`}>
+                <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 bg-rose-500/10 rounded-2xl shadow-lg ring-4 ring-rose-500/5 group-hover:scale-110 transition-transform">
+                        <TrendingDown className="w-8 h-8 text-rose-500" />
+                    </div>
+                    <div className="text-center">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">خصومات الراتب</h4>
+                        <p className={`text-3xl font-black ${theme === 'dark' ? 'text-rose-400' : 'text-rose-600'}`}>{totalSalaryDeduction.toLocaleString()} <span className="text-sm">د.ع</span></p>
                     </div>
                 </div>
             </div>

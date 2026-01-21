@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import {
   Building2, Plus, User, Briefcase, Sparkles
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import CompaniesGrid from './Companies/components/CompaniesGrid';
 import CompanyFilters from './Companies/components/CompanyFilters';
 import AddCompanyModal from './Companies/components/AddCompanyModal';
@@ -69,9 +71,10 @@ const Companies = () => {
   };
 
   return (
-    <main className={`p-4 md:p-6 min-h-screen w-full lg:max-w-7xl lg:mx-auto ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
+    <main className={`p-4 md:p-6 min-h-screen w-full lg:max-w-7xl lg:mx-auto pb-24 md:pb-6 ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'
       }`}>
-      <div className="mb-6">
+      {/* Header - Hidden on mobile */}
+      <div className="hidden md:block mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 bg-white/50 dark:bg-gray-800/50 p-6 rounded-3xl border border-gray-100 dark:border-gray-700 backdrop-blur-md shadow-xl shadow-gray-200/20 dark:shadow-none">
           <div className="flex items-center gap-4 text-right">
             <div className="relative shrink-0">
@@ -164,10 +167,7 @@ const Companies = () => {
       </div>
 
       {/* Filters Panel */}
-      <div className={`mb-6 rounded-2xl shadow-lg border overflow-hidden ${theme === 'dark'
-        ? 'bg-gray-800/60 border-gray-700'
-        : 'bg-white border-gray-200'
-        }`}>
+      <div className="mb-6">
         <CompanyFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -178,6 +178,7 @@ const Companies = () => {
           filterEntityType={filterEntityType}
           setFilterEntityType={setFilterEntityType}
         />
+        <div className="h-px bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-700 to-transparent mx-4" />
       </div>
 
       {/* Content */}
@@ -295,6 +296,93 @@ const Companies = () => {
         onImport={handleImportCompanies}
         downloadTemplate={downloadExcelTemplate}
       />
+
+      {/* Mobile Floating Action Button - Portal to body */}
+      {typeof document !== 'undefined' && createPortal(
+        <div className="md:hidden fixed bottom-[7.5rem] left-6 z-[9999] add-menu-container">
+          <button
+            onClick={() => setShowAddMenu(!showAddMenu)}
+            className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-full shadow-[0_10px_40px_-10px_rgba(37,99,235,0.6)] flex items-center justify-center transform active:scale-95 transition-all border-4 border-white dark:border-gray-800"
+          >
+            <Plus className={`w-8 h-8 transition-transform duration-300 ${showAddMenu ? 'rotate-[135deg]' : ''}`} />
+          </button>
+
+          <AnimatePresence>
+            {showAddMenu && (
+              <>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-40 bg-black/60 backdrop-blur-md"
+                  onClick={() => setShowAddMenu(false)}
+                />
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 40 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.8, y: 40 }}
+                  className={`fixed bottom-[13rem] left-6 w-64 rounded-[2.5rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border z-50 overflow-hidden ${theme === 'dark'
+                    ? 'bg-gray-800/95 border-gray-700/50 backdrop-blur-2xl text-white'
+                    : 'bg-white border-gray-100 shadow-blue-500/10 text-gray-900'
+                    }`}
+                >
+                  <div className="p-3 flex flex-col gap-1.5" dir="rtl">
+                    <div className="px-5 py-3 mb-1 border-b border-gray-100 dark:border-gray-700/50">
+                      <p className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>خيارات الإضافة</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setIsAddCompanyModalOpen(true);
+                        setShowAddMenu(false);
+                      }}
+                      className={`flex items-center gap-4 w-full px-5 py-4 transition-all rounded-2xl text-sm text-right ${theme === 'dark'
+                        ? 'hover:bg-blue-600/20'
+                        : 'hover:bg-blue-50'
+                        }`}
+                    >
+                      <div className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                        <Building2 className="w-5 h-5" />
+                      </div>
+                      <span className="font-black">إضافة شركة</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddClientModalOpen(true);
+                        setShowAddMenu(false);
+                      }}
+                      className={`flex items-center gap-4 w-full px-5 py-4 transition-all rounded-2xl text-sm text-right ${theme === 'dark'
+                        ? 'hover:bg-emerald-600/20'
+                        : 'hover:bg-emerald-50'
+                        }`}
+                    >
+                      <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                        <User className="w-5 h-5" />
+                      </div>
+                      <span className="font-black">إضافة عميل</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsAddExpenseModalOpen(true);
+                        setShowAddMenu(false);
+                      }}
+                      className={`flex items-center gap-4 w-full px-5 py-4 transition-all rounded-2xl text-sm text-right ${theme === 'dark'
+                        ? 'hover:bg-amber-600/20'
+                        : 'hover:bg-amber-50'
+                        }`}
+                    >
+                      <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                        <Briefcase className="w-5 h-5" />
+                      </div>
+                      <span className="font-black">إضافة مصروف</span>
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>,
+        document.body
+      )}
     </main>
   );
 };

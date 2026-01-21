@@ -70,17 +70,17 @@ export default function Employees() {
     },
     {
       id: 'files',
-      label: 'ملفات الموظفين',
+      label: 'ملفات',
       icon: Paperclip,
       description: 'مستمسكات ووثائق الموظفين'
     }
   ];
 
   return (
-    <main className="flex-1 overflow-y-auto h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 flex-1 flex flex-col max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
+    <main className="flex-1 overflow-y-auto h-full flex flex-col bg-gray-50 dark:bg-gray-900 pb-24 md:pb-6">
+      <div className="container mx-auto py-4 md:py-8 px-4 sm:px-6 lg:px-8 flex-1 flex flex-col max-w-7xl">
+        {/* Header - Hidden on mobile as requested */}
+        <div className="hidden md:block mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="relative group">
@@ -125,10 +125,10 @@ export default function Employees() {
         </div>
 
         {/* Tabs Navigation */}
-        <div className="mb-6">
-          <div className={`rounded-2xl shadow-lg border p-2 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
+        <div className="mb-2 md:mb-6">
+          <div className={`rounded-2xl shadow-lg border p-1 md:p-2 ${theme === 'dark' ? 'bg-gray-800/50' : 'bg-white/80'
             } border-gray-200/50`}>
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1 md:gap-2">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -136,13 +136,13 @@ export default function Employees() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 flex items-center justify-center gap-3 px-4 py-3 rounded-xl font-bold transition-all duration-300 ${isActive
+                    className={`flex-1 flex items-center justify-center gap-2 md:gap-3 px-2 md:px-4 py-2 md:py-3 rounded-xl font-bold transition-all duration-300 ${isActive
                       ? `${theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white text-gray-800'} shadow-md`
                       : `${theme === 'dark' ? 'text-gray-400 hover:text-white hover:bg-gray-700/50' : 'text-gray-500 hover:text-gray-900 hover:bg-white/50'}`
                       }`}
                   >
-                    <Icon className={`w-5 h-5 transition-all ${isActive ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') : ''}`} />
-                    <span className="text-sm">{tab.label}</span>
+                    <Icon className={`w-4 h-4 md:w-5 h-5 transition-all ${isActive ? (theme === 'dark' ? 'text-blue-400' : 'text-blue-600') : ''}`} />
+                    <span className="text-[10px] md:text-sm">{tab.label}</span>
                   </button>
                 );
               })}
@@ -151,7 +151,7 @@ export default function Employees() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 mt-6">
+        <div className="flex-1 mt-2 md:mt-6">
           {activeTab === 'employees' && (
             <EmployeesList onEdit={(id: string) => setEditingEmployeeId(id)} />
           )}
@@ -164,6 +164,22 @@ export default function Employees() {
           {activeTab === 'files' && <EmployeeFiles />}
         </div>
       </div>
+
+      {/* Floating Action Button for Mobile */}
+      {activeTab !== 'files' && (
+        <button
+          onClick={() => {
+            if (activeTab === 'permissions') {
+              setIsAddGroupModalOpen(true);
+            } else if (activeTab === 'employees') {
+              setIsAddEmployeeModalOpen(true);
+            }
+          }}
+          className="md:hidden fixed bottom-24 left-6 z-40 w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-full shadow-2xl flex items-center justify-center transform active:scale-90 transition-all border-4 border-white dark:border-gray-800"
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      )}
 
       {/* Add Employee Modal */}
       <AddEmployeeModal

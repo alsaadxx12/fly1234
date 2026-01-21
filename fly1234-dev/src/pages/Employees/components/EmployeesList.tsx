@@ -41,6 +41,7 @@ export default function EmployeesList({ onEdit }: EmployeesListProps) {
   const [error, setError] = React.useState<string | null>(null);
   const [deletingEmployee, setDeletingEmployee] = React.useState<Employee | null>(null);
   const [filterRole, setFilterRole] = React.useState<string>('all');
+  const [filterStatus, setFilterStatus] = React.useState<'all' | 'active' | 'inactive'>('all');
   const [permissionGroups, setPermissionGroups] = React.useState<Array<{ id: string, name: string }>>([]);
   const [isUpdatingStatus, setIsUpdatingStatus] = React.useState(false);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -145,7 +146,9 @@ export default function EmployeesList({ onEdit }: EmployeesListProps) {
       emp.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       emp.role.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = filterRole === 'all' || emp.permissionGroupName === filterRole;
-    return matchesSearch && matchesRole;
+    const matchesStatus = filterStatus === 'all' ||
+      (filterStatus === 'active' ? emp.isActive : !emp.isActive);
+    return matchesSearch && matchesRole && matchesStatus;
   });
 
   if (isLoading && !isRefreshing) {
@@ -171,43 +174,69 @@ export default function EmployeesList({ onEdit }: EmployeesListProps) {
       )}
 
       {/* Filters & Actions */}
-      <div className={`p-4 rounded-3xl border shadow-sm backdrop-blur-md flex flex-col md:flex-row gap-4 items-center justify-between ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-white/80 border-gray-200'}`}>
-        <div className="relative w-full md:w-96">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="البحث بالاسم، البريد، أو الوظيفة..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className={`w-full pr-11 pl-4 py-2.5 rounded-2xl border transition-all text-sm font-bold ${theme === 'dark' ? 'bg-gray-900/50 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-100 text-gray-700 focus:border-blue-600'}`}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
+      <div className="space-y-4">
+        {/* Row 1: Search & Refresh */}
+        <div className={`p-4 rounded-[2rem] border shadow-sm backdrop-blur-md flex gap-4 items-center justify-between ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-white/80 border-gray-200'}`}>
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="البحث بالاسم، البريد، أو الوظيفة..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className={`w-full pr-11 pl-4 py-3 rounded-2xl border transition-all text-sm font-bold ${theme === 'dark' ? 'bg-gray-900/50 border-gray-700 text-white focus:border-blue-500' : 'bg-gray-50 border-gray-100 text-gray-700 focus:border-blue-600'}`}
+            />
+          </div>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing || isUpdatingStatus}
-            className={`p-2.5 rounded-2xl transition-all ${isRefreshing ? 'animate-spin' : ''} ${theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`p-3 rounded-2xl transition-all ${isRefreshing ? 'animate-spin' : ''} ${theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
             <RefreshCw className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-gray-100 dark:bg-gray-900/50">
-            <button
-              onClick={() => setFilterRole('all')}
-              className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all ${filterRole === 'all' ? (theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white shadow-sm text-blue-600') : 'text-gray-500 hover:text-gray-700'}`}
+        </div>
+
+        {/* Row 2: Secondary Filters */}
+        <div className={`p-4 rounded-[2rem] border shadow-sm backdrop-blur-md flex flex-wrap gap-4 items-center ${theme === 'dark' ? 'bg-gray-800/50 border-gray-700' : 'bg-white/80 border-gray-200'}`}>
+          <div className="flex items-center gap-2 min-w-[200px]">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">المجموعة:</span>
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className={`flex-1 px-4 py-2 rounded-xl border transition-all text-xs font-black appearance-none ${theme === 'dark' ? 'bg-gray-900/50 border-gray-700 text-white focus:border-blue-500' : 'bg-white border-gray-200 text-gray-700 focus:border-blue-600'}`}
             >
-              الكل
-            </button>
-            {permissionGroups.map(group => (
-              <button
-                key={group.id}
-                onClick={() => setFilterRole(group.name)}
-                className={`px-4 py-1.5 rounded-xl text-xs font-black transition-all whitespace-nowrap ${filterRole === group.name ? (theme === 'dark' ? 'bg-gray-700 text-white' : 'bg-white shadow-sm text-blue-600') : 'text-gray-500 hover:text-gray-700'}`}
-              >
-                {group.name}
-              </button>
-            ))}
+              <option value="all">كل المجموعات</option>
+              {permissionGroups.map(group => (
+                <option key={group.id} value={group.name}>{group.name}</option>
+              ))}
+            </select>
           </div>
+
+          <div className="flex items-center gap-2 min-w-[150px]">
+            <span className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">الحالة:</span>
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value as any)}
+              className={`flex-1 px-4 py-2 rounded-xl border transition-all text-xs font-black appearance-none ${theme === 'dark' ? 'bg-gray-900/50 border-gray-700 text-white focus:border-blue-500' : 'bg-white border-gray-200 text-gray-700 focus:border-blue-600'}`}
+            >
+              <option value="all">الكل</option>
+              <option value="active">نشط</option>
+              <option value="inactive">غير نشط</option>
+            </select>
+          </div>
+
+          {(filterRole !== 'all' || filterStatus !== 'all' || searchQuery) && (
+            <button
+              onClick={() => {
+                setFilterRole('all');
+                setFilterStatus('all');
+                setSearchQuery('');
+              }}
+              className="px-4 py-2 rounded-xl text-[10px] font-black bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 transition-all border border-rose-500/20"
+            >
+              تفريغ الفلاتر
+            </button>
+          )}
         </div>
       </div>
 

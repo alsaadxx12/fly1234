@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { messaging } from '../lib/firebase';
+import { messaging, db } from '../lib/firebase';
 import { getToken, onMessage } from 'firebase/messaging';
+import { useAuth } from '../contexts/AuthContext';
+import { doc, updateDoc } from 'firebase/firestore';
 
 export function useNotifications() {
     const [permission, setPermission] = useState<NotificationPermission>('default');
     const [fcmToken, setFcmToken] = useState<string | null>(null);
+    const { employee } = useAuth();
 
     useEffect(() => {
-        if (!messaging) return;
+        if (!messaging || !employee?.id) return;
 
         const requestPermission = async () => {
             try {
@@ -23,7 +26,13 @@ export function useNotifications() {
                     if (token) {
                         console.log('✅ FCM Token:', token);
                         setFcmToken(token);
-                        // TODO: Send this token to your backend to associate with the user
+
+                        // Update employee document with the new token
+                        const employeeRef = doc(db, 'employees', employee.id!);
+                        await updateDoc(employeeRef, {
+                            fcmToken: token,
+                            lastTokenUpdate: new Date().toISOString()
+                        });
                     } else {
                         console.warn('No registration token available. Request permission to generate one.');
                     }

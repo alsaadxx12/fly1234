@@ -38,14 +38,14 @@ export default function useVouchers({
   const [error, setError] = useState<string | null>(null);
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string | null>(null);
   const [isLoadingInvoiceNumber, setIsLoadingInvoiceNumber] = useState(false);
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [pageHistory, setPageHistory] = useState<(QueryDocumentSnapshot<DocumentData> | null)[]>([null]);
   const [hasNextPage, setHasNextPage] = useState(false);
 
   const employeeCache = useRef<EmployeeCache>({});
-  
+
   const getEmployeeNameFromCache = useCallback(async (employeeId: string): Promise<string> => {
     if (!employeeId) return 'غير معروف';
     if (employeeCache.current[employeeId]) {
@@ -61,7 +61,7 @@ export default function useVouchers({
         employeeCache.current[employeeId] = name;
         return name;
       }
-      
+
       employeeCache.current[employeeId] = employeeId;
       return employeeId;
     } catch (error) {
@@ -75,112 +75,116 @@ export default function useVouchers({
     let q = query(collection(db, 'vouchers'), where('type', '==', type));
 
     if (appliedInvoiceNumber) {
-        q = query(q, where('invoiceNumber', '==', parseInt(appliedInvoiceNumber)));
+      q = query(q, where('invoiceNumber', '==', parseInt(appliedInvoiceNumber)));
     }
     if (beneficiaryFilter) {
-        q = query(q, where('companyName', '==', beneficiaryFilter));
+      q = query(q, where('companyName', '==', beneficiaryFilter));
     }
     if (currencyFilter !== 'all') {
-        q = query(q, where('currency', '==', currencyFilter));
+      q = query(q, where('currency', '==', currencyFilter));
     }
     if (dateFrom) {
-        q = query(q, where('createdAt', '>=', Timestamp.fromDate(dateFrom)));
+      q = query(q, where('createdAt', '>=', Timestamp.fromDate(dateFrom)));
     }
     if (dateTo) {
-        const adjustedDateTo = new Date(dateTo);
-        adjustedDateTo.setHours(23, 59, 59, 999);
-        q = query(q, where('createdAt', '<=', Timestamp.fromDate(adjustedDateTo)));
+      const adjustedDateTo = new Date(dateTo);
+      adjustedDateTo.setHours(23, 59, 59, 999);
+      q = query(q, where('createdAt', '<=', Timestamp.fromDate(adjustedDateTo)));
     }
-    
+
     q = query(q, orderBy('createdAt', 'desc'));
-    
+
     if (startAfterDoc) {
       q = query(q, startAfter(startAfterDoc));
     }
 
-    q = query(q, limit(itemsPerPage));
-    
+    // Increased limit when searching to allow client-side filter to work on more records
+    const searchLimit = appliedSearchTerm ? 1000 : itemsPerPage;
+    q = query(q, limit(searchLimit));
+
     return q;
-  }, [type, appliedInvoiceNumber, beneficiaryFilter, currencyFilter, dateFrom, dateTo, itemsPerPage]);
+  }, [type, appliedInvoiceNumber, beneficiaryFilter, currencyFilter, dateFrom, dateTo, itemsPerPage, appliedSearchTerm]);
 
 
   const fetchVouchersPage = useCallback(async (direction: 'next' | 'prev' | 'first' = 'first') => {
     setIsLoading(true);
     setError(null);
     if (!user) {
-        setVouchers([]);
-        setIsLoading(false);
-        return;
+      setVouchers([]);
+      setIsLoading(false);
+      return;
     }
 
     try {
-        let currentCursor: QueryDocumentSnapshot<DocumentData> | null = null;
-        if (direction === 'first') {
-            setCurrentPage(1);
-            setPageHistory([null]);
-        } else if (direction === 'next') {
-            currentCursor = lastVisible;
-            setPageHistory(prev => [...prev, lastVisible]);
-            setCurrentPage(prev => prev + 1);
-        } else if (direction === 'prev' && currentPage > 1) {
-            const newPageHistory = [...pageHistory];
-            newPageHistory.pop();
-            currentCursor = newPageHistory[newPageHistory.length - 1] || null;
-            setPageHistory(newPageHistory);
-            setCurrentPage(prev => prev - 1);
-        }
+      let currentCursor: QueryDocumentSnapshot<DocumentData> | null = null;
+      if (direction === 'first') {
+        setCurrentPage(1);
+        setPageHistory([null]);
+      } else if (direction === 'next') {
+        currentCursor = lastVisible;
+        setPageHistory(prev => [...prev, lastVisible]);
+        setCurrentPage(prev => prev + 1);
+      } else if (direction === 'prev' && currentPage > 1) {
+        const newPageHistory = [...pageHistory];
+        newPageHistory.pop();
+        currentCursor = newPageHistory[newPageHistory.length - 1] || null;
+        setPageHistory(newPageHistory);
+        setCurrentPage(prev => prev - 1);
+      }
 
-        const q = buildQuery(currentCursor);
-        const snapshot = await getDocs(q);
+      const q = buildQuery(currentCursor);
+      const snapshot = await getDocs(q);
 
-        let vouchersData = snapshot.docs.map((doc: any) => {
-            const data = doc.data();
-            return {
-                id: doc.id,
-                ...data,
-                createdAt: data.createdAt?.toDate() || new Date(),
-                createdBy: data.createdById || data.createdBy || data.employeeId || '',
-            } as Ticket;
-        });
+      let vouchersData = snapshot.docs.map((doc: any) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          createdBy: data.createdById || data.createdBy || data.employeeId || '',
+        } as Ticket;
+      });
 
-        if (appliedSearchTerm && !appliedInvoiceNumber) {
-            const term = appliedSearchTerm.toLowerCase();
-            vouchersData = vouchersData.filter((v: Ticket) => 
-                v.companyName.toLowerCase().includes(term) ||
-                (v.details && v.details.toLowerCase().includes(term))
-            );
-        }
-        
-        const employeeIds = [...new Set(vouchersData.map(v => v.createdBy).filter(Boolean))];
-        const namesMap: Record<string, string> = {};
-        for (const id of employeeIds) {
-            namesMap[id] = await getEmployeeNameFromCache(id);
-        }
-        const finalVouchers = vouchersData.map(v => ({
-            ...v,
-            createdByName: namesMap[v.createdBy] || v.createdBy
-        }));
+      const employeeIds = [...new Set(vouchersData.map(v => v.createdBy).filter(Boolean))];
+      const namesMap: Record<string, string> = {};
+      for (const id of employeeIds) {
+        namesMap[id] = await getEmployeeNameFromCache(id);
+      }
 
-        setVouchers(finalVouchers);
-        
-        const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-        setLastVisible(lastDoc || null);
+      let finalVouchers = vouchersData.map(v => ({
+        ...v,
+        createdByName: namesMap[v.createdBy] || v.createdBy
+      }));
 
-        if (snapshot.docs.length === itemsPerPage) {
-          const nextQuery = buildQuery(lastDoc);
-          const nextSnapshot = await getDocs(query(nextQuery, limit(1)));
-          setHasNextPage(!nextSnapshot.empty);
-        } else {
-          setHasNextPage(false);
-        }
+      if (appliedSearchTerm && !appliedInvoiceNumber) {
+        const term = appliedSearchTerm.toLowerCase();
+        finalVouchers = finalVouchers.filter((v: any) =>
+          v.companyName.toLowerCase().includes(term) ||
+          (v.details && v.details.toLowerCase().includes(term)) ||
+          (v.createdByName && v.createdByName.toLowerCase().includes(term))
+        );
+      }
+
+      setVouchers(finalVouchers);
+
+      const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      setLastVisible(lastDoc || null);
+
+      if (snapshot.docs.length === (appliedSearchTerm ? 1000 : itemsPerPage)) {
+        const nextQuery = buildQuery(lastDoc);
+        const nextSnapshot = await getDocs(query(nextQuery, limit(1)));
+        setHasNextPage(!nextSnapshot.empty);
+      } else {
+        setHasNextPage(false);
+      }
 
     } catch (err) {
-        console.error("Error fetching vouchers:", err);
-        setError("فشل في جلب البيانات. قد تحتاج إلى إنشاء فهرس في Firestore. تحقق من console المتصفح للحصول على الرابط.");
+      console.error("Error fetching vouchers:", err);
+      setError("فشل في جلب البيانات. قد تحتاج إلى إنشاء فهرس في Firestore. تحقق من console المتصفح للحصول على الرابط.");
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
-  }, [user, buildQuery, getEmployeeNameFromCache, lastVisible, pageHistory, currentPage, appliedSearchTerm, itemsPerPage]);
+  }, [user, buildQuery, getEmployeeNameFromCache, lastVisible, pageHistory, currentPage, appliedSearchTerm, itemsPerPage, appliedInvoiceNumber]);
 
   useEffect(() => {
     fetchVouchersPage('first');
@@ -193,16 +197,16 @@ export default function useVouchers({
   };
 
   const prevPage = () => {
-      fetchVouchersPage('prev');
+    fetchVouchersPage('prev');
   };
-  
+
   useEffect(() => {
     const getNextInvoiceNumber = async () => {
       setIsLoadingInvoiceNumber(true);
       try {
         const settingsRef = doc(db, 'account_settings', 'global');
         const settingsDoc = await getDoc(settingsRef);
-        
+
         if (settingsDoc.exists()) {
           const settingsData = settingsDoc.data();
           const nextNumber = settingsData.nextInvoiceNumber ? settingsData.nextInvoiceNumber.toString() : '1000';
@@ -224,39 +228,39 @@ export default function useVouchers({
         setIsLoadingInvoiceNumber(false);
       }
     };
-    
+
     getNextInvoiceNumber();
   }, []);
-  
+
   const incrementInvoiceNumber = useCallback(async () => {
     if (!nextInvoiceNumber) return;
-    
+
     try {
       const settingsRef = doc(db, 'account_settings', 'global');
       const settingsDoc = await getDoc(settingsRef);
-      
+
       if (settingsDoc.exists()) {
         const currentNumber = parseInt(nextInvoiceNumber);
         const newNumber = (currentNumber + 1).toString();
-        
+
         await updateDoc(settingsRef, {
           nextInvoiceNumber: newNumber,
           updatedAt: new Date()
         });
-        
+
         setNextInvoiceNumber(newNumber);
       }
     } catch (error) {
       console.error('Error incrementing invoice number:', error);
     }
   }, [nextInvoiceNumber]);
-  
+
   const createVoucher = useCallback(async (voucherData: any) => {
     try {
       if (!nextInvoiceNumber) {
         throw new Error('رقم الفاتورة غير متوفر');
       }
-      
+
       const voucherWithInvoiceNumber = {
         ...voucherData,
         confirmation: false,
@@ -264,10 +268,10 @@ export default function useVouchers({
         createdAt: serverTimestamp(),
         settlement: false
       };
-      
+
       const vouchersRef = collection(db, 'vouchers');
       const docRef = await addDoc(vouchersRef, voucherWithInvoiceNumber);
-      
+
       await incrementInvoiceNumber();
       fetchVouchersPage('first');
       return { id: docRef.id, ...voucherWithInvoiceNumber, createdAt: new Date() } as Ticket;
@@ -281,7 +285,7 @@ export default function useVouchers({
     try {
       const voucherRef = doc(db, 'vouchers', id);
       const voucherDoc = await getDoc(voucherRef);
-      
+
       if (voucherDoc.exists()) {
         await addDeletedVoucher({
           ...voucherDoc.data(),
@@ -290,7 +294,7 @@ export default function useVouchers({
         await deleteDoc(voucherRef);
         fetchVouchersPage('first');
       }
-      
+
     } catch (error) {
       console.error('Error deleting voucher:', error);
       throw new Error('فشل في حذف السند');
@@ -339,4 +343,4 @@ export default function useVouchers({
   };
 }
 
-    
+

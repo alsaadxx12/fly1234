@@ -11,7 +11,10 @@ import {
     Megaphone,
     LogOut,
     Settings,
-    ChevronLeft
+    ChevronLeft,
+    Bell,
+    Zap,
+    CreditCard
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,15 +24,18 @@ const MobileSystemNav: React.FC = () => {
     const { signOut } = useAuth();
 
     const systemLinks = [
-        { path: '/balances', icon: DollarSign, label: 'الأرصدة', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-        { path: '/employees', icon: Users, label: 'الموظفين', color: 'text-blue-500', bg: 'bg-blue-500/10' },
         { path: '/departments', icon: Briefcase, label: 'الأقسام', color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-        { path: '/branches', icon: MapPin, label: 'الفروع', color: 'text-rose-500', bg: 'bg-rose-500/10' },
-        { path: '/attendance-reports', icon: FileClock, label: 'تقارير الحضور', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+        { path: '/employees', icon: Users, label: 'الموظفين', color: 'text-blue-500', bg: 'bg-blue-500/10' },
+        { path: '/balances', icon: DollarSign, label: 'الأرصدة', color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
         { path: '/safes', icon: Box, label: 'الصناديق', color: 'text-cyan-500', bg: 'bg-cyan-500/10' },
-        { path: '/pending-issues', icon: AlertTriangle, label: 'المشاكل', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+        { path: '/attendance-reports', icon: FileClock, label: 'تقارير الحضور', color: 'text-amber-500', bg: 'bg-amber-500/10' },
+        { path: '/branches', icon: MapPin, label: 'الفروع', color: 'text-rose-500', bg: 'bg-rose-500/10' },
+        { path: '/notification-settings', icon: Bell, label: 'الإشعارات', color: 'text-blue-600', bg: 'bg-blue-600/10' },
         { path: '/reports', icon: Megaphone, label: 'التبليغات', color: 'text-purple-500', bg: 'bg-purple-500/10' },
-        { path: '/settings', icon: Settings, label: 'الإعدادات', color: 'text-slate-500', bg: 'bg-slate-500/10' },
+        { path: '/pending-issues', icon: AlertTriangle, label: 'المشاكل', color: 'text-orange-500', bg: 'bg-orange-500/10' },
+        { path: '/api-integrations', icon: Zap, label: 'API', color: 'text-yellow-500', bg: 'bg-yellow-500/10' },
+        { path: '/mastercard-issues', icon: CreditCard, label: 'مشاكل الماستر', color: 'text-blue-400', bg: 'bg-blue-400/10' },
+        { path: '/settings', icon: Settings, label: 'إعدادات النظام', color: 'text-slate-500', bg: 'bg-slate-500/10' },
     ];
 
     return (
@@ -45,8 +51,8 @@ const MobileSystemNav: React.FC = () => {
                         key={link.path}
                         to={link.path}
                         className={`flex flex-col items-center gap-3 p-4 rounded-[24px] border transition-all active:scale-95 ${theme === 'dark'
-                                ? 'bg-white/5 border-white/5 hover:bg-white/10'
-                                : 'bg-white border-gray-100 shadow-sm'
+                            ? 'bg-white/5 border-white/5 hover:bg-white/10'
+                            : 'bg-white border-gray-100 shadow-sm'
                             }`}
                     >
                         <div className={`p-3 rounded-2xl ${link.bg} ${link.color}`}>
@@ -62,8 +68,8 @@ const MobileSystemNav: React.FC = () => {
             <button
                 onClick={() => signOut()}
                 className={`w-full flex items-center justify-between p-5 rounded-[24px] border mt-10 transition-all active:scale-[0.98] ${theme === 'dark'
-                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                        : 'bg-red-50 border-red-100 text-red-600'
+                    ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                    : 'bg-red-50 border-red-100 text-red-600'
                     }`}
             >
                 <div className="flex items-center gap-4">

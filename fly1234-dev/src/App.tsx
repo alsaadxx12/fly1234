@@ -38,6 +38,7 @@ const Departments = lazy(() => import('./pages/Departments'));
 const Reports = lazy(() => import('./pages/Reports'));
 const ProfilePage = lazy(() => import('./pages/Profile'));
 const Leaves = lazy(() => import('./pages/Leaves'));
+const PersonalNotificationSettings = lazy(() => import('./pages/PersonalNotificationSettings'));
 
 const LoadingFallback = () => {
   const { theme } = useTheme();
@@ -128,6 +129,7 @@ function AppRoutes() {
                       <Route path="/attendance-reports" element={<PermissionGuard requiredPermissions={{ page: 'تقارير الحضور', actions: ['view'] }}><AttendanceReports /></PermissionGuard>} />
                       <Route path="/branches" element={<PermissionGuard requiredPermissions={{ page: 'الفروع', actions: ['view'] }}><Branches /></PermissionGuard>} />
                       <Route path="/leaves" element={<Leaves />} />
+                      <Route path="/notification-settings" element={<PersonalNotificationSettings />} />
                       <Route path="*" element={<Navigate to="/dashboard" />} />
                     </Routes>
                   </Suspense>
@@ -143,6 +145,8 @@ function AppRoutes() {
 
 import { Toaster } from 'sonner';
 
+import NotificationManager from './components/NotificationManager';
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -155,6 +159,7 @@ export default function App() {
                   <Toaster position="top-center" richColors />
                   <ConnectivityManager />
                   <GlobalApiSync />
+                  <NotificationManager />
                   <AppRoutes />
                 </GlobalModalsProvider>
               </NotificationProvider>
