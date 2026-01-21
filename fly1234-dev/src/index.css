@@ -31,6 +31,7 @@ html.dark #root {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -41,6 +42,7 @@ html.dark #root {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -52,6 +54,7 @@ html.dark #root {
     opacity: 0;
     transform: translateX(-30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -63,6 +66,7 @@ html.dark #root {
     opacity: 0;
     transform: translateX(30px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -70,13 +74,24 @@ html.dark #root {
 }
 
 @keyframes shake {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateX(0);
   }
-  10%, 30%, 50%, 70%, 90% {
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
     transform: translateX(-5px);
   }
-  20%, 40%, 60%, 80% {
+
+  20%,
+  40%,
+  60%,
+  80% {
     transform: translateX(5px);
   }
 }
@@ -85,6 +100,7 @@ html.dark #root {
   0% {
     background-position: 200% 0;
   }
+
   100% {
     background-position: -200% 0;
   }
@@ -120,17 +136,20 @@ html.dark #root {
     opacity: 0;
     transform: translateY(50px) scale(0.9);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
+
 .animate-modal-swoop {
   animation: modal-swoop-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Mobile App Enhancements */
 @layer base {
+
   /* Safe Area Support for iOS notch and Android navigation */
   .safe-top {
     padding-top: env(safe-area-inset-top);
@@ -169,7 +188,10 @@ html.dark #root {
     }
 
     /* Remove default mobile styles */
-    input, textarea, select, button {
+    input,
+    textarea,
+    select,
+    button {
       -webkit-appearance: none;
       -moz-appearance: none;
       appearance: none;
@@ -177,7 +199,10 @@ html.dark #root {
     }
 
     /* Better touch targets */
-    button, a, input[type="button"], input[type="submit"] {
+    button,
+    a,
+    input[type="button"],
+    input[type="submit"] {
       min-height: 44px;
       min-width: 44px;
     }
@@ -221,7 +246,7 @@ html.dark #root {
 
 /* Improved table styling */
 table {
-  border-collapse: separate !important; 
+  border-collapse: separate !important;
   border-spacing: 0;
   font-size: 0.85rem !important;
   font-family: 'Tajawal', 'Cairo', sans-serif !important;
@@ -278,7 +303,7 @@ table th {
 }
 
 /* Ensure table cells have proper display */
-td > div {
+td>div {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -302,7 +327,10 @@ html.dark body {
   color: #f3f4f6;
 }
 
-input, textarea, select, button {
+input,
+textarea,
+select,
+button {
   font-family: 'Tajawal', 'Cairo', sans-serif !important;
   font-weight: 700 !important;
   line-height: 1.4;
@@ -328,14 +356,25 @@ a:focus-visible {
   outline: none !important;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Tajawal', 'Cairo', sans-serif !important;
   font-weight: 700 !important;
   line-height: 1.3;
   margin-top: 0;
 }
 
-.text-xs, .text-sm, .text-base, .text-lg, .text-xl, .text-2xl, .text-3xl {
+.text-xs,
+.text-sm,
+.text-base,
+.text-lg,
+.text-xl,
+.text-2xl,
+.text-3xl {
   font-family: 'Tajawal', 'Cairo', sans-serif !important;
   font-weight: 700 !important;
 }
@@ -371,6 +410,12 @@ html {
   scroll-behavior: smooth !important;
   scroll-padding-top: 2rem;
   min-height: 100%;
+  overscroll-behavior-y: auto !important;
+}
+
+body {
+  overscroll-behavior-y: auto !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Optimize scrolling performance */
@@ -393,7 +438,7 @@ html {
 .landing-page * {
   will-change: transform, opacity;
   transform: translateZ(0);
-  backface-visibility: hidden; 
+  backface-visibility: hidden;
 }
 
 /* Custom transition duration */
@@ -874,7 +919,7 @@ body {
 
 /* Dividers */
 .dark hr,
-.dark .divide-y > * {
+.dark .divide-y>* {
   border-color: rgba(75, 85, 99, 0.3) !important;
 }
 
@@ -938,16 +983,20 @@ body {
     transform: translateX(-150px) translateY(-50%) rotate(-15deg);
     opacity: 0;
   }
+
   8% {
     opacity: 0.8;
   }
+
   50% {
     opacity: 1;
     transform: translateX(50%) translateY(-50%) rotate(-15deg) scale(1.05);
   }
+
   92% {
     opacity: 0.8;
   }
+
   100% {
     transform: translateX(calc(100% + 150px)) translateY(-50%) rotate(-15deg);
     opacity: 0;
@@ -960,8 +1009,7 @@ body {
   left: 0;
   animation: fly 18s ease-in-out infinite;
   z-index: 1;
-  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.6))
-          drop-shadow(0 0 20px rgba(96, 165, 250, 0.4));
+  filter: drop-shadow(0 4px 12px rgba(59, 130, 246, 0.6)) drop-shadow(0 0 20px rgba(96, 165, 250, 0.4));
 }
 
 .flying-plane svg {
@@ -979,11 +1027,10 @@ body {
   width: 120px;
   height: 3px;
   background: linear-gradient(to left,
-    rgba(96, 165, 250, 0.8) 0%,
-    rgba(96, 165, 250, 0.4) 30%,
-    rgba(96, 165, 250, 0.1) 70%,
-    transparent 100%
-  );
+      rgba(96, 165, 250, 0.8) 0%,
+      rgba(96, 165, 250, 0.4) 30%,
+      rgba(96, 165, 250, 0.1) 70%,
+      transparent 100%);
   transform: translateY(-50%);
   animation: contrail 18s ease-in-out infinite;
   box-shadow: 0 0 8px rgba(96, 165, 250, 0.5);
@@ -997,23 +1044,28 @@ body {
   width: 120px;
   height: 1px;
   background: linear-gradient(to left,
-    rgba(147, 197, 253, 0.6) 0%,
-    rgba(147, 197, 253, 0.3) 40%,
-    transparent 100%
-  );
+      rgba(147, 197, 253, 0.6) 0%,
+      rgba(147, 197, 253, 0.3) 40%,
+      transparent 100%);
   transform: translateY(calc(-50% + 4px));
   animation: contrail 18s ease-in-out infinite;
 }
 
 @keyframes contrail {
-  0%, 5%, 95%, 100% {
+
+  0%,
+  5%,
+  95%,
+  100% {
     opacity: 0;
     width: 0;
   }
+
   15% {
     opacity: 1;
     width: 120px;
   }
+
   85% {
     opacity: 1;
     width: 120px;
@@ -1026,6 +1078,7 @@ body {
     opacity: 0;
     transform: translateY(30px) scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -1037,6 +1090,7 @@ body {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   to {
     opacity: 0;
     transform: translateY(-30px) scale(0.95);
@@ -1048,6 +1102,7 @@ body {
     opacity: 0;
     transform: translateX(50px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -1059,6 +1114,7 @@ body {
     opacity: 1;
     transform: translateX(0);
   }
+
   to {
     opacity: 0;
     transform: translateX(-50px);
@@ -1088,9 +1144,12 @@ body {
 
 /* Smooth bounce animation for active items */
 @keyframes bounce-slow {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-3px);
   }
@@ -1106,6 +1165,7 @@ body {
     transform: scale(0);
     opacity: 1;
   }
+
   100% {
     transform: scale(4);
     opacity: 0;

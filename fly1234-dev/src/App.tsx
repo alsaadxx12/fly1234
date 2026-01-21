@@ -13,6 +13,8 @@ import LoginPage from './pages/Login';
 import AuthGuard from './components/AuthGuard';
 import PermissionGuard from './components/PermissionGuard';
 import GlobalApiSync from './components/GlobalApiSync';
+import AppErrorBoundary from './components/AppErrorBoundary';
+import ConnectivityManager from './components/ConnectivityManager';
 import { checkAndCalculateEmployeeOfTheMonth } from './lib/services/employeeOfTheMonthService';
 import Subscriptions from './pages/Subscriptions';
 
@@ -52,6 +54,24 @@ const LoadingFallback = () => {
   );
 };
 
+function RootRedirect() {
+  const { user } = useAuth();
+  const isAppMode = window.matchMedia('(display-mode: standalone)').matches ||
+    (window.navigator as any).standalone ||
+    /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (user) {
+    return <Navigate to="/attendance-standalone" />;
+  }
+
+  // If mobile or app mode, go to login, else go to landing
+  if (isAppMode) {
+    return <LoginPage />;
+  }
+
+  return <LandingPage />;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -66,7 +86,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/attendance-standalone" /> : <LoginPage />} />
-      <Route path="/" element={user ? <Navigate to="/attendance-standalone" /> : <LandingPage />} />
+      <Route path="/" element={<RootRedirect />} />
       <Route path="/voucher/:voucherId" element={<Suspense fallback={<LoadingFallback />}><PublicVoucher /></Suspense>} />
 
       <Route
@@ -127,17 +147,20 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <NotificationProvider>
-              <GlobalModalsProvider>
-                <Toaster position="top-center" richColors />
-                <GlobalApiSync />
-                <AppRoutes />
-              </GlobalModalsProvider>
-            </NotificationProvider>
-          </LanguageProvider>
-        </ThemeProvider>
+        <AppErrorBoundary>
+          <ThemeProvider>
+            <LanguageProvider>
+              <NotificationProvider>
+                <GlobalModalsProvider>
+                  <Toaster position="top-center" richColors />
+                  <ConnectivityManager />
+                  <GlobalApiSync />
+                  <AppRoutes />
+                </GlobalModalsProvider>
+              </NotificationProvider>
+            </LanguageProvider>
+          </ThemeProvider>
+        </AppErrorBoundary>
       </AuthProvider>
     </BrowserRouter>
   );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -9,7 +10,6 @@ import {
     Globe,
     Users,
     PieChart,
-    ChevronDown,
     Sparkles,
     LayoutDashboard,
     Database,
@@ -22,6 +22,7 @@ import {
 
 const LandingPage: React.FC = () => {
     const navigate = useNavigate();
+    const { user } = useAuth();
     const { customSettings } = useTheme();
     const [activeFaq, setActiveFaq] = useState<number | null>(null);
 
@@ -43,17 +44,17 @@ const LandingPage: React.FC = () => {
     return (
         <div className="min-h-screen bg-slate-900 font-['Tajawal'] text-white overflow-x-hidden selection:bg-blue-500/30">
             {/* Navigation */}
-            <nav className="fixed top-0 w-full z-50 bg-slate-900/50 backdrop-blur-lg border-b border-white/10 px-6 py-4">
+            <nav className="fixed top-0 w-full z-50 bg-slate-900/50 backdrop-blur-lg border-b border-white/10 px-4 md:px-6 py-3 md:py-4">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <motion.button
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('/login')}
+                        onClick={() => navigate(user ? '/attendance-standalone' : '/login')}
                         className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl font-bold transition-all shadow-lg shadow-blue-500/25"
                     >
-                        تسجيل الدخول
+                        {user ? 'لوحة التحكم' : 'دخول'}
                     </motion.button>
                     <motion.div
                         initial={{ opacity: 0, x: 20 }}
@@ -62,13 +63,13 @@ const LandingPage: React.FC = () => {
                         className="flex items-center gap-3 cursor-pointer"
                         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
                     >
-                        <img src={customSettings.logoUrl} alt="Logo" className="h-12 w-auto" />
+                        <img src={customSettings.logoUrl} alt="Logo" className="h-8 md:h-12 w-auto" />
                     </motion.div>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <section className="relative pt-40 pb-32 px-6 overflow-hidden">
+            <section className="relative pt-28 md:pt-40 pb-20 md:pb-32 px-4 md:px-6 overflow-hidden">
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none">
                     <motion.div
                         drag
@@ -111,17 +112,22 @@ const LandingPage: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: "spring", stiffness: 200, damping: 15 }}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-bold mb-8 shadow-inner"
+                        className="inline-flex items-center gap-2 px-4 md:px-6 py-2 md:py-3 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs md:text-sm font-bold mb-6 md:mb-8 shadow-inner"
                     >
-                        <Sparkles className="w-5 h-5" />
-                        <span>نظام الإدارة الأكثر تطوراً متاح الآن</span>
+                        <motion.div
+                            animate={{ rotate: [0, 15, -15, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                        >
+                            <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
+                        </motion.div>
+                        <span>نظام الإدارة الأكثر تطوراً</span>
                     </motion.div>
 
                     <motion.h1
                         initial={{ opacity: 0, y: 50 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ type: "spring", stiffness: 50, damping: 20, delay: 0.2 }}
-                        className="text-6xl md:text-8xl font-black mb-8 leading-tight tracking-tight px-4"
+                        className="text-3xl sm:text-6xl md:text-8xl font-black mb-6 md:mb-8 leading-tight tracking-tight px-2"
                     >
                         الإبداع في <br />
                         <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-indigo-400">
@@ -133,7 +139,7 @@ const LandingPage: React.FC = () => {
                         initial={{ opacity: 0, y: 30 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ type: "spring", stiffness: 40, damping: 20, delay: 0.4 }}
-                        className="text-slate-400 text-lg md:text-2xl max-w-4xl mx-auto mb-16 leading-relaxed px-6"
+                        className="text-slate-400 text-base md:text-2xl max-w-4xl mx-auto mb-10 md:mb-16 leading-relaxed px-6"
                     >
                         اختبر القوة الحقيقية في إدارة الحجوزات، الحسابات، وفريق العمل من خلال منصة واحدة ذكية صممت لتلبي تطلعاتك وتدفع بأعمالك نحو القمة.
                     </motion.p>
@@ -145,19 +151,19 @@ const LandingPage: React.FC = () => {
                         className="flex flex-col sm:flex-row items-center justify-center gap-6"
                     >
                         <button
-                            onClick={() => navigate('/login')}
-                            className="group relative w-full sm:w-auto overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-12 py-5 rounded-2xl font-black text-xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-blue-500/40 flex items-center justify-center gap-3"
+                            onClick={() => navigate(user ? '/attendance-standalone' : '/login')}
+                            className="group relative w-full sm:w-auto overflow-hidden bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 md:px-12 py-4 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-blue-500/40 flex items-center justify-center gap-3"
                         >
                             <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
-                            <span className="relative z-10">ابدأ الان</span>
-                            <ArrowRight className="w-6 h-6 relative z-10 group-hover:translate-x-1 transition-transform" />
+                            <span className="relative z-10">{user ? 'دخول للنظام' : 'ابدأ الان'}</span>
+                            <ArrowRight className="w-5 h-5 md:w-6 md:h-6 relative z-10 group-hover:translate-x-1 transition-transform" />
                         </button>
                     </motion.div>
                 </div>
             </section>
 
             {/* Dashboard Preview Section */}
-            <section className="py-24 px-6 relative overflow-visible">
+            <section className="py-12 md:py-24 px-4 md:px-6 relative overflow-visible">
                 <div className="max-w-7xl mx-auto text-center">
                     <motion.div
                         whileInView={{ opacity: 1, scale: 1, rotateX: 0 }}
@@ -183,22 +189,22 @@ const LandingPage: React.FC = () => {
                                     <div className="w-10" />
                                 </div>
                                 {/* Mockup Content */}
-                                <div className="p-8 aspect-video flex items-center justify-center relative overflow-hidden group">
-                                    <LayoutDashboard className="w-32 h-32 text-blue-500/20 group-hover:scale-110 transition-transform duration-700" />
-                                    <div className="absolute inset-0 p-8 grid grid-cols-12 gap-6 opacity-60">
-                                        <div className="col-span-3 h-40 bg-white/5 rounded-2xl border border-white/10" />
-                                        <div className="col-span-6 h-40 bg-gradient-to-br from-blue-500/10 to-transparent rounded-2xl border border-blue-500/20" />
-                                        <div className="col-span-3 h-40 bg-white/5 rounded-2xl border border-white/10" />
-                                        <div className="col-span-8 h-60 bg-white/5 rounded-2xl border border-white/10" />
-                                        <div className="col-span-4 h-60 bg-white/5 rounded-2xl border border-white/10" />
+                                <div className="p-4 md:p-8 aspect-video flex items-center justify-center relative overflow-hidden group">
+                                    <LayoutDashboard className="w-16 h-16 md:w-32 md:h-32 text-blue-500/20 group-hover:scale-110 transition-transform duration-700" />
+                                    <div className="absolute inset-0 p-4 md:p-8 grid grid-cols-12 gap-3 md:gap-6 opacity-60">
+                                        <div className="col-span-12 md:col-span-3 h-20 md:h-40 bg-white/5 rounded-2xl border border-white/10" />
+                                        <div className="hidden md:block md:col-span-6 h-40 bg-gradient-to-br from-blue-500/10 to-transparent rounded-2xl border border-blue-500/20" />
+                                        <div className="hidden md:block md:col-span-3 h-40 bg-white/5 rounded-2xl border border-white/10" />
+                                        <div className="col-span-12 md:col-span-8 h-32 md:h-60 bg-white/5 rounded-2xl border border-white/10" />
+                                        <div className="hidden md:block md:col-span-4 h-60 bg-white/5 rounded-2xl border border-white/10" />
                                     </div>
                                     <div className="absolute inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px]">
-                                        <div className="text-center p-12">
-                                            <h3 className="text-3xl font-black mb-4">لوحة تحكم ذكية وشاملة</h3>
-                                            <p className="text-slate-300 max-w-md mx-auto mb-8 font-medium">
+                                        <div className="text-center p-6 md:p-12">
+                                            <h3 className="text-xl md:text-3xl font-black mb-2 md:mb-4">لوحة تحكم ذكية وشاملة</h3>
+                                            <p className="text-slate-300 text-sm md:text-lg max-w-md mx-auto mb-6 md:mb-8 font-medium">
                                                 صممنا واجهة مستخدم تفاعلية تمكنك من رؤية أدائك المالي وعملياتك في لقطة واحدة.
                                             </p>
-                                            <button className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-6 py-2 rounded-xl font-bold">
+                                            <button className="bg-blue-600/20 text-blue-400 border border-blue-500/30 px-4 md:px-6 py-1.5 md:py-2 rounded-lg md:rounded-xl text-sm md:text-base font-bold">
                                                 استكشف النسخة التجريبية
                                             </button>
                                         </div>
@@ -212,7 +218,7 @@ const LandingPage: React.FC = () => {
 
 
             {/* Global Capabilities */}
-            <section className="py-24 px-6 relative overflow-hidden">
+            <section className="py-12 md:py-24 px-4 md:px-6 relative overflow-hidden">
                 <div className="max-w-7xl mx-auto">
                     <div className="grid md:grid-cols-2 items-center gap-16">
                         <motion.div
@@ -220,10 +226,10 @@ const LandingPage: React.FC = () => {
                             initial={{ opacity: 0, x: 40 }}
                             viewport={{ once: true }}
                         >
-                            <div className="inline-flex p-3 bg-blue-600/20 rounded-2xl mb-6">
-                                <Globe className="w-8 h-8 text-blue-500" />
+                            <div className="inline-flex p-2 md:p-3 bg-blue-600/20 rounded-xl md:rounded-2xl mb-4 md:mb-6">
+                                <Globe className="w-6 h-6 md:w-8 md:h-8 text-blue-500" />
                             </div>
-                            <h2 className="text-4xl font-black mb-6 leading-tight">إدارة عالمية <br /> بلمسة محلية</h2>
+                            <h2 className="text-3xl md:text-4xl font-black mb-4 md:mb-6 leading-tight">إدارة عالمية <br /> بلمسة محلية</h2>
                             <p className="text-slate-400 text-lg mb-8 leading-relaxed font-medium">
                                 نظامنا مجهز للتعامل مع تحدياتك اليومية، من تعدد العملات (دولار وعراقي) إلى إدارة الفروع المتعددة ومزامنة البيانات عبر السحاب فورياً.
                             </p>
@@ -253,7 +259,7 @@ const LandingPage: React.FC = () => {
                             whileInView={{ opacity: 1, scale: 1 }}
                             initial={{ opacity: 0, scale: 0.9 }}
                             viewport={{ once: true }}
-                            className="grid grid-cols-2 gap-6"
+                            className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6"
                         >
                             {[
                                 { icon: Database, label: 'أمان البيانات', val: '256-bit' },
@@ -261,10 +267,10 @@ const LandingPage: React.FC = () => {
                                 { icon: Smartphone, label: 'تطبيق جوال', val: 'متاح' },
                                 { icon: Headphones, label: 'دعم فني', val: '24/7' }
                             ].map((card, i) => (
-                                <div key={i} className="bg-white/5 border border-white/10 p-8 rounded-[32px] hover:bg-white/10 transition-colors">
-                                    <card.icon className="w-10 h-10 text-blue-500 mb-6" />
-                                    <div className="text-2xl font-black mb-1">{card.val}</div>
-                                    <div className="text-slate-500 font-bold text-sm">{card.label}</div>
+                                <div key={i} className="bg-white/5 border border-white/10 p-6 md:p-8 rounded-[24px] md:rounded-[32px] hover:bg-white/10 transition-colors text-center md:text-right">
+                                    <card.icon className="w-8 h-8 md:w-10 md:h-10 text-blue-500 mb-4 md:mb-6 mx-auto md:mr-0 md:ml-0" />
+                                    <div className="text-xl md:text-2xl font-black mb-1">{card.val}</div>
+                                    <div className="text-slate-500 font-bold text-xs md:text-sm">{card.label}</div>
                                 </div>
                             ))}
                         </motion.div>
@@ -280,7 +286,7 @@ const LandingPage: React.FC = () => {
                         <p className="text-slate-500 max-w-2xl mx-auto font-medium">حلول رقمية متكاملة تغطي كافة جوانب عملك بطريقة ذكية ومنظمة.</p>
                     </div>
 
-                    <div className="grid md:grid-cols-4 gap-6">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
                         <FeatureSlot
                             icon={Users}
                             title="إدارة الموظفين"
@@ -310,7 +316,7 @@ const LandingPage: React.FC = () => {
             </section>
 
             {/* FAQ Section */}
-            <section className="py-24 px-6 relative">
+            <section className="py-16 md:py-24 px-4 md:px-6 relative">
                 <div className="max-w-3xl mx-auto">
                     <div className="text-center mb-16">
                         <h2 className="text-4xl font-black mb-4">الأسئلة الشائعة</h2>
@@ -349,8 +355,8 @@ const LandingPage: React.FC = () => {
             </section>
 
             {/* Final CTA Section */}
-            <section className="py-24 px-6 relative overflow-hidden">
-                <div className="max-w-5xl mx-auto rounded-[48px] bg-gradient-to-br from-blue-600 to-indigo-700 p-12 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-blue-500/20">
+            <section className="py-16 md:py-24 px-4 md:px-6 relative overflow-hidden">
+                <div className="max-w-5xl mx-auto rounded-[32px] md:rounded-[48px] bg-gradient-to-br from-blue-600 to-indigo-700 p-8 md:p-24 text-center relative overflow-hidden shadow-2xl shadow-blue-500/20">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10" />
                     <motion.div
                         whileInView={{ opacity: 1, scale: 1 }}
@@ -366,10 +372,10 @@ const LandingPage: React.FC = () => {
                         </p>
                         <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
                             <button
-                                onClick={() => navigate('/login')}
-                                className="w-full sm:w-auto bg-white text-blue-600 px-12 py-5 rounded-2xl font-black text-xl hover:bg-blue-50 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                                onClick={() => navigate(user ? '/attendance-standalone' : '/login')}
+                                className="w-full sm:w-auto bg-white text-blue-600 px-8 md:px-12 py-4 md:py-5 rounded-xl md:rounded-2xl font-black text-lg md:text-xl hover:bg-blue-50 transition-all hover:scale-105 active:scale-95 shadow-xl"
                             >
-                                سجل دخولك الآن
+                                {user ? 'دخول للوحة التحكم' : 'سجل دخولك الآن'}
                             </button>
                             <button className="flex items-center gap-3 text-white font-bold text-lg hover:underline underline-offset-8 transition-all">
                                 تحدث مع قسم المبيعات
