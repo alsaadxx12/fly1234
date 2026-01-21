@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence, getAuth, updateCurrentUser } from 'firebase/auth';
+import { signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, User, setPersistence, browserLocalPersistence } from 'firebase/auth';
 import { auth } from '../lib/firebase';
-import { getEmployeeByUserId, updateEmployee, getEmployees } from '../lib/collections/employees';
+import { getEmployeeByUserId, updateEmployee } from '../lib/collections/employees';
 
 interface AuthContextType {
   user: any;
@@ -43,30 +43,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.warn('لم يتم تعيين مجموعة صلاحيات لهذا الحساب');
       return true; // Allow login even without permission group
     }
-    
+
     // Check if permissions object exists
     if (!employeeData.permission_group.permissions) {
       console.log('No permissions object found in permission group');
       console.warn('لم يتم تعيين صلاحيات لهذا الحساب');
       return true; // Allow login even without permissions object
     }
-    
+
     // Check if permission_group has isAdmin flag
     if (employeeData.permission_group.permissions?.isAdmin === true) {
       console.log('User is admin, allowing access');
       return true;
     }
-    
+
     // For non-admin users, check specific permissions
     const permissions = employeeData.permission_group.permissions;
-    
+
     // Allow login if the employee has any permission at all
     let hasAnyPermission = false;
-    
+
     // Check all permission keys
     for (const key in permissions) {
       if (key === 'isAdmin') continue; // Skip isAdmin check as it was done above
-      
+
       const value = permissions[key];
       if (Array.isArray(value) && value.length > 0) {
         console.log(`User has permissions for ${key}:`, value);
@@ -74,13 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         break;
       }
     }
-    
+
     if (!hasAnyPermission) {
       console.log('Employee has no specific permissions, but allowing login');
       console.warn('الموظف ليس لديه أي صلاحيات محددة، ولكن سيتم السماح بالدخول');
       return true; // Allow login even without specific permissions
     }
-    
+
     return true;
   };
 
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setPermissionLoading(true);
     setCurrentUser(user);
-  
+
     // If a user is creating another user, don't change the current admin's state.
     const isCreatingUser = localStorage.getItem('isCreatingUser') === 'true';
     if (isCreatingUser && employee) {
@@ -96,11 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setPermissionLoading(false);
       return;
     }
-  
+
     if (user) {
       try {
         const employeeData = await getEmployeeByUserId(user.uid);
-  
+
         if (!employeeData) {
           // This path can be hit if the employee document is not yet created.
           // We will not immediately sign out, especially during registration.
@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.warn(`No employee document found for user UID: ${user.uid}`);
           // Don't sign out immediately. Let other logic handle it.
         }
-  
+
         if (employeeData && !employeeData.isActive) {
           await signOut();
           setUser(null);
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setError('تم تعطيل حسابك. يرجى التواصل مع المسؤول');
           return;
         }
-  
+
         if (employeeData) {
           try {
             checkEmployeePermissions(employeeData);
@@ -135,7 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(user); // Keep user object to avoid login loops, but no employee data
           setEmployee(null);
         }
-  
+
       } catch (error) {
         console.error('Error in auth state change:', error);
         await signOut();
@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     setLoading(false);
   };
-  
+
 
   React.useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, handleAuthStateChange);
@@ -207,12 +207,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setEmployee(employeeData);
 
       // Get the redirect path from location state or default to the standalone attendance page
-      const from = location.state?.from?.pathname || '/attendance-standalone';
+      const from = (location as any).state?.from?.pathname || '/attendance-standalone';
       navigate(from, { replace: true });
     } catch (error) {
       console.error('Error signing in:', error);
       let errorMessage = 'حدث خطأ أثناء تسجيل الدخول';
-      
+
       if (error instanceof Error) {
         if (error.message.includes('user-not-found')) {
           errorMessage = 'البريد الإلكتروني غير مسجل';
@@ -224,7 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           errorMessage = error.message;
         }
       }
-      
+
       setError(errorMessage);
       throw error;
     } finally {
@@ -237,12 +237,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(true);
       // Sign out from Firebase first
       await firebaseSignOut(auth);
-      
+
       // Clear state
       setUser(null);
       setEmployee(null);
       setError(null);
-      
+
       // Navigate to login page
       navigate('/login', { replace: true });
     } catch (error) {
@@ -252,20 +252,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   };
-  
+
   const updateEmployeeProfile = async (employeeId: string, data: Partial<any>) => {
     try {
       if (!employeeId) throw new Error('Employee ID is required');
-      
+
       // Update employee in Firestore
       await updateEmployee(employeeId, data);
-      
+
       // Update local state
-      setEmployee(prev => {
+      setEmployee((prev: any) => {
         if (!prev) return null;
         return { ...prev, ...data };
       });
-      
+
       return Promise.resolve();
     } catch (error) {
       console.error('Error updating employee profile:', error);
@@ -276,15 +276,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Function to check if the current employee has a specific permission
   const checkPermission = (page: string, action: string): boolean => {
     if (!employee) return false;
-    
+
     // Check if employee has permission group
     if (!employee.permission_group) return false;
-    
+
     const permissions = employee.permission_group.permissions;
-    
+
     // Admin has access to everything
     if (permissions?.isAdmin === true) return true;
-    
+
     // Define mapping between English and Arabic page names
     const pageNameMap: Record<string, string> = {
       'accounts': 'الحسابات',
@@ -323,26 +323,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       'تقارير الحضور': 'attendance-reports',
       'branches': 'الفروع',
       'الفروع': 'branches',
+      'leaves': 'الإجازات',
+      'الإجازات': 'leaves',
     };
-    
+
     // Check both the English and Arabic page names
     let pagePermissions: string[] = [];
     const alternatePageName = pageNameMap[page];
-    
+
     // Check primary page name
     if (Array.isArray(permissions?.[page])) {
       pagePermissions = permissions[page] as string[];
-    } 
+    }
     // Check alternate page name if available
     else if (alternatePageName && Array.isArray(permissions?.[alternatePageName])) {
       pagePermissions = permissions[alternatePageName] as string[];
     }
-    
-   // Special case for 'read' action - map it to 'view' permission
-   if (action === 'read' && pagePermissions.includes('view')) {
-     return true;
-   }
-   
+
+    // Special case for 'read' action - map it to 'view' permission
+    if (action === 'read' && pagePermissions.includes('view')) {
+      return true;
+    }
+
     return pagePermissions.includes(action);
   };
 

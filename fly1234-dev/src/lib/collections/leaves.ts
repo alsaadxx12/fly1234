@@ -32,8 +32,13 @@ export const subscribeToLeaves = (callback: (leaves: LeaveRequest[]) => void) =>
 };
 
 export const submitLeaveRequest = async (request: Omit<LeaveRequest, 'id' | 'status' | 'submittedAt'>) => {
+    // Filter out undefined values as Firestore doesn't allow them
+    const cleanedRequest = Object.fromEntries(
+        Object.entries(request).filter(([_, v]) => v !== undefined)
+    );
+
     const docRef = await addDoc(collection(db, LEAVES_COLLECTION), {
-        ...request,
+        ...cleanedRequest,
         status: 'pending',
         submittedAt: Timestamp.now(),
     });

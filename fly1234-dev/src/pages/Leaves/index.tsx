@@ -3,19 +3,17 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useNotification } from '../../contexts/NotificationContext';
 import {
-    Calendar,
-    Clock,
-    Send,
-    CheckCircle2,
-    XCircle,
-    History,
     Plus,
-    AlertCircle,
     Clock3,
     CalendarDays,
     User,
-    ShieldCheck,
-    Activity
+    Activity,
+    DollarSign,
+    Send,
+    CheckCircle2,
+    XCircle,
+    Calendar,
+    Clock
 } from 'lucide-react';
 import ArabicDatePicker from '../../components/ArabicDatePicker';
 import ModernModal from '../../components/ModernModal';
@@ -24,7 +22,7 @@ import { LeaveRequest, LeaveType } from './types';
 import { toast } from 'sonner';
 
 export default function Leaves() {
-    const { user } = useAuth();
+    const { user, employee, checkPermission } = useAuth();
     const { theme } = useTheme();
     const { showNotification } = useNotification();
 
@@ -41,10 +39,14 @@ export default function Leaves() {
         date: new Date(),
         startTime: '08:00',
         endTime: '16:00',
-        reason: ''
+        reason: '',
+        deductSalary: true
     });
 
-    const isManager = user?.role === 'admin' || user?.role === 'manager';
+    const isManager = employee?.permission_group?.permissions?.isAdmin === true ||
+        employee?.permission_group?.name?.includes('مدير') ||
+        employee?.permission_group?.name?.toLowerCase().includes('manager') ||
+        checkPermission('leaves', 'approve');
 
     useEffect(() => {
         fetchLeaves();
@@ -87,7 +89,8 @@ export default function Leaves() {
                 date: requestData.type === 'time' ? requestData.date : undefined,
                 startTime: requestData.type === 'time' ? requestData.startTime : undefined,
                 endTime: requestData.type === 'time' ? requestData.endTime : undefined,
-                reason: requestData.reason
+                reason: requestData.reason,
+                deductSalary: requestData.deductSalary
             });
 
             toast.success('تم إرسال طلب الإجازة بنجاح');
@@ -173,11 +176,14 @@ export default function Leaves() {
                                         {leave.type === 'full_day' ? 'إجازة كاملة' : 'إجازة زمنية'}
                                     </div>
                                     <div className={`px-3 py-1 rounded-full text-xs font-black ${leave.status === 'approved' ? 'bg-emerald-100 text-emerald-600' :
-                                            leave.status === 'rejected' ? 'bg-rose-100 text-rose-600' :
-                                                'bg-amber-100 text-amber-600'
+                                        leave.status === 'rejected' ? 'bg-rose-100 text-rose-600' :
+                                            'bg-amber-100 text-amber-600'
                                         }`}>
                                         {leave.status === 'approved' ? 'مقبولة' :
                                             leave.status === 'rejected' ? 'مرفوضة' : 'قيد الانتظار'}
+                                    </div>
+                                    <div className={`px-2 py-1 rounded-lg text-[10px] font-black ${leave.deductSalary ? 'bg-rose-50 dark:bg-rose-900/20 text-rose-600' : 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600'}`}>
+                                        {leave.deductSalary ? 'خصم من الراتب' : 'بدون خصم'}
                                     </div>
                                 </div>
 
@@ -317,6 +323,24 @@ export default function Leaves() {
                                 </div>
                             </>
                         )}
+                    </div>
+
+                    <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-3">
+                            <div className={`p-2 rounded-xl ${requestData.deductSalary ? 'bg-rose-100 text-rose-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                <DollarSign className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-black text-gray-900 dark:text-white">خصم من الراتب</p>
+                                <p className="text-xs text-gray-500 font-bold">تحديد إذا كانت الإجازة مدفوعة أم لا</p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => setRequestData({ ...requestData, deductSalary: !requestData.deductSalary })}
+                            className={`w-12 h-6 rounded-full transition-all relative ${requestData.deductSalary ? 'bg-rose-500' : 'bg-gray-300 dark:bg-gray-700'}`}
+                        >
+                            <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${requestData.deductSalary ? 'right-7' : 'right-1'}`} />
+                        </button>
                     </div>
 
                     <div className="space-y-1">

@@ -20,7 +20,7 @@ import useIssues from '../hooks/useIssues';
 import useMastercardIssues from '../pages/MastercardIssues/hooks/useMastercardIssues';
 
 import { useNotifications } from '../hooks/useNotifications';
-import { subscribeToLeaves } from '../lib/collections/leaves';
+import { subscribeToLeaves, updateLeaveStatus } from '../lib/collections/leaves';
 import { LeaveRequest } from '../pages/Leaves/types';
 import { ClipboardList } from 'lucide-react';
 
@@ -98,7 +98,17 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isIssuesPopoverOpen, setIsIssuesPopoverOpen] = useState(false);
   const pendingIssues = issues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
   const pendingMastercardIssues = mastercardIssues.filter((issue: any) => issue.status === 'pending' || issue.status === 'in_progress');
-  const pendingLeaves = leaveRequests.filter(leave => leave.status === 'pending');
+  const isManagerOrAdmin = employee?.permission_group?.permissions?.isAdmin === true ||
+    employee?.permission_group?.name?.includes('مدير') ||
+    employee?.permission_group?.name?.toLowerCase().includes('manager') ||
+    checkPermission('leaves', 'approve');
+
+  const pendingLeaves = leaveRequests.filter(leave => {
+    if (leave.status !== 'pending') return false;
+    if (employee?.permission_group?.permissions?.isAdmin === true) return true;
+    if (isManagerOrAdmin) return leave.departmentId === employee?.departmentId;
+    return leave.employeeId === user?.uid;
+  });
   const allPendingIssues = [...pendingIssues, ...pendingMastercardIssues, ...pendingLeaves];
   const [departmentName, setDepartmentName] = useState('');
 
@@ -386,6 +396,18 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     };
   }, [showNotification, notificationSettings.exchangeRateSoundEnabled, notificationSettings.notificationSound]);
 
+  const handleLeaveAction = async (e: React.MouseEvent, leaveId: string, status: 'approved' | 'rejected') => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await updateLeaveStatus(leaveId, status, user!.uid, employee?.name || 'مدير');
+      showNotification('success', status === 'approved' ? 'تمت الموافقة' : 'تم الرفض', 'تم تحديث حالة الطلب بنجاح');
+    } catch (error) {
+      console.error(error);
+      showNotification('error', 'فشل الإجراء', 'حدث خطأ أثناء تحديث الحالة');
+    }
+  };
+
   const priorityConfig = {
     high: { label: 'عاجلة', icon: <AlertCircle className="w-4 h-4" />, color: 'bg-red-500/10 text-red-500', cardBg: 'bg-gradient-to-tr from-red-50 to-white border-red-200', cardBgDark: 'dark:from-red-900/20 dark:to-gray-800/10 dark:border-red-800/50' },
     medium: { label: 'متوسطة', icon: <Clock className="w-4 h-4" />, color: 'bg-yellow-500/10 text-yellow-500', cardBg: 'bg-gradient-to-tr from-yellow-50 to-white border-yellow-200', cardBgDark: 'dark:from-yellow-900/20 dark:to-gray-800/10 dark:border-yellow-800/50' },
@@ -426,7 +448,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            {(hasPendingIssuesPermission || hasMastercardIssuesPermission) && (
+            {(hasPendingIssuesPermission || hasMastercardIssuesPermission || user?.role === 'admin' || user?.role === 'manager') && (
               <Popover.Root open={isIssuesPopoverOpen} onOpenChange={setIsIssuesPopoverOpen}>
                 <Popover.Trigger asChild>
                   <button
@@ -519,12 +541,37 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                                       <p className="text-[9px] font-bold opacity-40 line-clamp-1 mb-2">
                                         {isLeaveRequest ? issue.reason : (issue.description || 'بلا وصف')}
                                       </p>
-                                      <div className="flex items-center justify-between text-[8px] font-bold opacity-50">
-                                        <span className="truncate max-w-[80px]">{isLeaveRequest ? issue.departmentName : issue.createdByName}</span>
-                                        <div className={`px-1.5 py-0.5 rounded-md border ${priority.color.replace('text-', 'border-')}`}>
+                                      <div className="flex items-center justify-between gap-2 mt-2">
+                                        <div className={`px-2 py-0.5 rounded text-[8px] font-bold ${priority.color}`}>
                                           {priority.label}
                                         </div>
+                                        {isLeaveRequest && (
+                                          <div className={`px-2 py-0.5 rounded text-[8px] font-bold ${issue.deductSalary ? 'bg-red-500/10 text-red-500' : 'bg-emerald-500/10 text-emerald-500'}`}>
+                                            {issue.deductSalary ? 'خصم من الراتب' : 'بدون خصم'}
+                                          </div>
+                                        )}
                                       </div>
+
+                                      {isLeaveRequest && isManagerOrAdmin && issue.employeeId !== user?.uid ? (
+                                        <div className="flex gap-2 mt-3 pt-2 border-t border-gray-500/10">
+                                          <button
+                                            onClick={(e) => handleLeaveAction(e, issue.id, 'approved')}
+                                            className="flex-1 py-1 px-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 rounded-lg text-[9px] font-black border border-emerald-500/30 transition-all active:scale-95"
+                                          >
+                                            موافقة
+                                          </button>
+                                          <button
+                                            onClick={(e) => handleLeaveAction(e, issue.id, 'rejected')}
+                                            className="flex-1 py-1 px-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 rounded-lg text-[9px] font-black border border-rose-500/30 transition-all active:scale-95"
+                                          >
+                                            رفض
+                                          </button>
+                                        </div>
+                                      ) : isLeaveRequest && (
+                                        <div className="mt-2 pt-2 border-t border-gray-500/10 text-center">
+                                          <span className="text-[8px] font-black text-amber-500/70 uppercase tracking-widest">قيد الانتظار</span>
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 </Link>
@@ -565,7 +612,12 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                   </div>
                 )}
                 <span className="hidden sm:inline text-sm font-bold text-white whitespace-nowrap">{employee?.name || 'المستخدم'}</span>
-                <ChevronDown className={`w-4 h-4 text-white/80 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                <div className="relative">
+                  <ChevronDown className={`w-4 h-4 text-white/80 transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />
+                  {pendingLeaves.length > 0 && (
+                    <span className="absolute -top-4 -right-2 w-2 h-2 bg-indigo-500 rounded-full border border-slate-900 animate-pulse" />
+                  )}
+                </div>
               </button>
 
               {isUserMenuOpen && (
@@ -649,6 +701,21 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
                       <span>الملف الشخصي</span>
                     </Link>
                     <Link
+                      to="/leaves"
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors group w-full text-sm font-medium"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <ClipboardList className="w-4 h-4 text-gray-500 group-hover:text-indigo-600 dark:group-hover:text-indigo-400" />
+                        <span>طلبات الإجازات</span>
+                      </div>
+                      {pendingLeaves.length > 0 && (
+                        <span className="bg-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full animate-pulse">
+                          {pendingLeaves.length} {isManagerOrAdmin ? 'جديد' : 'معلق'}
+                        </span>
+                      )}
+                    </Link>
+                    <Link
                       to="/settings"
                       className="flex items-center gap-3 px-3 py-2.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-lg transition-colors group w-full text-sm font-medium"
                       onClick={() => setIsUserMenuOpen(false)}
@@ -682,7 +749,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
             </div>
           </div>
         </div>
-      </header>
+      </header >
 
       <div className="flex flex-1 relative overflow-hidden">
         <Sidebar
@@ -707,7 +774,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </div>
 
       <GlobalModals />
-    </div>
+    </div >
   );
 };
 

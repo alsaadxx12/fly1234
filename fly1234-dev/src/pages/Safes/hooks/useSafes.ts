@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getSafes, addSafe, updateSafe, deleteSafe, getSafeResetHistory, confirmVoucher as confirmVoucherApi, recalculateAllSafesBalances, getVouchersForSafe, calculateSafeBalance } from '../../../lib/collections/safes';
-import { collection, query, where, doc, onSnapshot, orderBy } from 'firebase/firestore';
+import { addSafe, updateSafe, deleteSafe, getSafeResetHistory, confirmVoucher as confirmVoucherApi, calculateSafeBalance } from '../../../lib/collections/safes';
+import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Safe, ResetHistory, UnconfirmedVoucher } from '../types';
@@ -19,7 +19,14 @@ export default function useSafes(
   const [resetHistory, setResetHistory] = useState<ResetHistory[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [selectedSafe, setSelectedSafe] = useState<string | null>(null);
-  const [newSafe, setNewSafe] = useState({
+  const [newSafe, setNewSafe] = useState<{
+    name: string;
+    balance_usd: number;
+    balance_iqd: number;
+    is_main?: boolean;
+    custodian_name?: string;
+    custodian_image?: string;
+  }>({
     name: '',
     balance_usd: 0,
     balance_iqd: 0,
@@ -60,7 +67,7 @@ export default function useSafes(
         } as Safe;
       });
       setSafes(safesData);
-      if(!snapshot.metadata.hasPendingWrites) setIsLoading(false);
+      if (!snapshot.metadata.hasPendingWrites) setIsLoading(false);
     }, (err) => {
       console.error("Error fetching safes:", err);
       setError("فشل في تحميل الصناديق");
@@ -139,6 +146,7 @@ export default function useSafes(
       const formattedHistory = history.map(item => ({
         ...item,
         created_at: item.created_at instanceof Date ? item.created_at : new Date(item.created_at),
+        id: item.id || ''
       }));
       setResetHistory(formattedHistory);
     } catch (error) {
@@ -157,8 +165,8 @@ export default function useSafes(
     try {
       if (!newSafe.name.trim()) throw new Error('يرجى إدخال اسم الصندوق');
       if (newSafe.balance_usd < 0 || newSafe.balance_iqd < 0) throw new Error('يجب أن تكون الأرصدة قيم موجبة');
-      
-      const id = await addSafe({
+
+      /* const id = */ await addSafe({
         name: newSafe.name,
         balance_usd: newSafe.balance_usd,
         balance_iqd: newSafe.balance_iqd,
@@ -244,7 +252,7 @@ export default function useSafes(
     setNewSafe,
     isSubmitting,
     isRefreshing: isLoading,
-    setIsRefreshing: () => {}, // No-op as it's real-time now
+    setIsRefreshing: () => { }, // No-op as it's real-time now
     handleViewHistory,
     handleAddSafe,
     handleEdit,

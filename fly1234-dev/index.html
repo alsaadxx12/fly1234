@@ -12,11 +12,11 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="fly4" />
+  <meta name="apple-mobile-web-app-title" content="Fly4all_acc" />
   <meta name="theme-color" content="#2563eb" />
 
   <!-- PWA Meta Tags -->
-  <meta name="application-name" content="fly4 Management" />
+  <meta name="application-name" content="Fly4all_acc" />
   <meta name="description" content="نظام إدارة متكامل للأعمال" />
 
   <!-- iOS Splash Screens -->
@@ -29,36 +29,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700&family=Tajawal:wght@700&display=swap"
     rel="stylesheet">
 
-  <title>fly4 Management</title>
+  <title>Fly4all_acc</title>
 
   <!-- PDF.js Library -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
   <style>
-    /* Prevent overscroll bounce on iOS */
+    /* Base styles */
     html,
     body {
-      position: fixed;
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
     }
 
     #root {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100%;
     }
 
-    /* Hide scrollbar for mobile */
+    /* Hide scrollbar for mobile only if requested, but better to keep it for usability */
     @media (max-width: 768px) {
       ::-webkit-scrollbar {
-        display: none;
-      }
-
-      * {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
+        width: 4px;
       }
     }
   </style>

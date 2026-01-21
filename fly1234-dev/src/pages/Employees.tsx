@@ -33,7 +33,8 @@ export default function Employees() {
     { id: 12, name: 'التدقيق', permissions: ['view', 'delete', 'edit', 'auditTransfer', 'auditEntry'] },
     { id: 13, name: 'المشاكل المعلقة', permissions: ['view', 'add', 'edit', 'delete'] },
     { id: 14, name: 'مشاكل بوابة الماستر', permissions: ['view', 'add', 'edit', 'delete'] },
-    { id: 15, name: 'التبليغات', permissions: ['view', 'add', 'edit', 'delete'] }
+    { id: 15, name: 'التبليغات', permissions: ['view', 'add', 'edit', 'delete'] },
+    { id: 16, name: 'الإجازات', permissions: ['view', 'add', 'edit', 'delete', 'approve'] }
   ];
 
   React.useEffect(() => {

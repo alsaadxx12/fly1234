@@ -106,7 +106,7 @@ const AddSafeModal: React.FC<AddSafeModalProps> = ({
             </button>
           </div>
         </div>
-        
+
         <form onSubmit={onSubmit} className="flex-1 overflow-y-auto">
           <div className="p-6 space-y-6">
             {/* Custodian Image Section */}

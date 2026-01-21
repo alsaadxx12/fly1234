@@ -20,6 +20,7 @@ export interface LeaveRequest {
     endTime?: string;   // format "HH:mm"
 
     reason: string;
+    deductSalary: boolean;
     submittedAt: Date;
     reviewedAt?: Date;
     reviewedBy?: string;

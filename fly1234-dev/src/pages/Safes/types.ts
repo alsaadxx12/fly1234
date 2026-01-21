@@ -15,12 +15,12 @@ export interface Safe {
 }
 
 export interface ResetHistory {
-  id: string;
+  id?: string;
   safe_id: string;
   safe_name: string;
   reset_type: 'usd' | 'iqd' | 'both';
-  previous_balance_usd?: number;
-  previous_balance_iqd?: number;
+  previous_balance_usd?: number | null;
+  previous_balance_iqd?: number | null;
   target_safe_id?: string;
   target_safe_name?: string;
   reset_by: string;

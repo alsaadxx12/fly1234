@@ -8,7 +8,8 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import { GlobalModalsProvider } from './contexts/GlobalModalsContext';
 import Layout from './components/Layout';
 import PageTransition from './components/PageTransition';
-import LandingPage from './pages/Landing';
+import LandingPage from './pages/Landing/LandingPage';
+import LoginPage from './pages/Login';
 import AuthGuard from './components/AuthGuard';
 import PermissionGuard from './components/PermissionGuard';
 import GlobalApiSync from './components/GlobalApiSync';
@@ -64,7 +65,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/attendance-standalone" /> : <LandingPage />} />
+      <Route path="/login" element={user ? <Navigate to="/attendance-standalone" /> : <LoginPage />} />
       <Route path="/" element={user ? <Navigate to="/attendance-standalone" /> : <LandingPage />} />
       <Route path="/voucher/:voucherId" element={<Suspense fallback={<LoadingFallback />}><PublicVoucher /></Suspense>} />
 

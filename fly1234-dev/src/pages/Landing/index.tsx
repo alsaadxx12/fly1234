@@ -17,6 +17,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 import './styles.css';
 import { useTheme } from '../../contexts/ThemeContext';
+import WelcomeOverlay from '../../components/WelcomeOverlay';
 
 interface EmployeeData {
   email: string;
@@ -42,6 +43,7 @@ function Landing() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [employeeData, setEmployeeData] = useState<EmployeeData | null>(null);
   const [isLoadingEmployee, setIsLoadingEmployee] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
 
   useEffect(() => {
     if (user && !loading) {
@@ -111,10 +113,14 @@ function Landing() {
     try {
       await signIn(email.trim(), password);
       setSuccess('تم تسجيل الدخول بنجاح!');
+      setShowWelcome(true);
+      // Timeout is now handled by onFinish of WelcomeOverlay or kept here as fallback
       setTimeout(() => {
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
-      }, 1000);
+        if (!showWelcome) { // If for some reason overlay isn't showing
+          const from = location.state?.from?.pathname || '/dashboard';
+          navigate(from, { replace: true });
+        }
+      }, 4000);
     } catch (err: any) {
       setError(err.message || 'فشل تسجيل الدخول. يرجى التحقق من بياناتك.');
     }
@@ -122,6 +128,14 @@ function Landing() {
 
   return (
     <div className="min-h-screen flex overflow-hidden bg-white dark:bg-gray-900 font-['Tajawal']">
+      <WelcomeOverlay
+        isVisible={showWelcome}
+        userName={employeeData?.name}
+        onFinish={() => {
+          const from = location.state?.from?.pathname || '/dashboard';
+          navigate(from, { replace: true });
+        }}
+      />
 
       {/* Decorative Background Elements */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
@@ -296,13 +310,23 @@ function Landing() {
 
         {/* Content */}
         <div className="relative z-10 max-w-xl text-right animate-fadeIn">
-          <div className="mb-12 relative inline-block">
-            <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full" />
-            <img
-              src={customSettings.logoUrl}
-              alt="FLY4ALL Logo"
-              className="h-24 w-auto drop-shadow-2xl relative z-10"
-            />
+          <div className="mb-12 relative flex flex-col items-end gap-6 group">
+            <div className="relative">
+              <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full scale-110 group-hover:bg-blue-500/30 transition-all duration-500" />
+              <img
+                src={customSettings.logoUrl}
+                alt="FLY4ALL Logo"
+                className="h-28 w-auto drop-shadow-2xl relative z-10 transition-transform duration-500 group-hover:scale-105"
+              />
+            </div>
+
+            {/* Simple Explanation Section */}
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 p-6 rounded-2xl transform transition-all duration-500 hover:bg-white/10 text-right max-w-md">
+              <h3 className="text-xl font-bold text-blue-400 mb-2">أهلاً بك في منصة FLY4ALL</h3>
+              <p className="text-slate-300 text-sm leading-relaxed">
+                بوابتك المتكاملة لإدارة عمليات الطيران بكل احترافية. نسعى لتوفير أدوات ذكية تضمن لك الكفاءة، السرعة، والأمان في كل خطوة من رحلتك الإدارية.
+              </p>
+            </div>
           </div>
 
           <h2 className="text-6xl font-black text-white mb-8 leading-tight drop-shadow-lg">

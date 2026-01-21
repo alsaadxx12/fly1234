@@ -367,12 +367,10 @@ h1, h2, h3, h4, h5, h6 {
   color: #6b7280 !important;
 }
 
-/* Custom scroll behavior */
 html {
-  scroll-behavior: auto !important;
+  scroll-behavior: smooth !important;
   scroll-padding-top: 2rem;
-  height: 100%;
-  overscroll-behavior: none;
+  min-height: 100%;
 }
 
 /* Optimize scrolling performance */
@@ -456,8 +454,7 @@ html {
 
 /* Optimize scrolling performance */
 body {
-  overflow-y: scroll;
-  overscroll-behavior-y: none;
+  min-height: 100%;
 }
 
 /* Fix for Recharts text color */
