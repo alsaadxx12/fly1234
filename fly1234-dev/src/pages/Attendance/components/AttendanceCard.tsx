@@ -17,11 +17,14 @@ import {
 import { useTheme } from '../../../contexts/ThemeContext';
 import useAttendance from '../hooks/useAttendance';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useNotification } from '../../../contexts/NotificationContext';
 
 
 const AttendanceCard: React.FC = () => {
   const navigate = useNavigate();
+  const { theme } = useTheme();
   const { showNotification } = useNotification();
+  const { employee, loading: authLoading } = useAuth();
   const {
     latestRecord,
     loading: attendanceLoading,

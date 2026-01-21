@@ -3,7 +3,7 @@
  */
 
 export const isBiometricSupported = async (): Promise<boolean> => {
-    if (!window.PublicKeyCredential) return false;
+    if (!window.PublicKeyCredential || !window.isSecureContext) return false;
 
     try {
         const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
@@ -14,8 +14,12 @@ export const isBiometricSupported = async (): Promise<boolean> => {
 };
 
 export const registerBiometrics = async (userId: string, email: string) => {
+    if (!window.isSecureContext) {
+        throw new Error('التحقق الحيوي يتطلب اتصلاً آمناً (HTTPS). يرجى التأكد من تشغيل النظام عبر HTTPS.');
+    }
+
     if (!window.PublicKeyCredential) {
-        throw new Error('Biometric authentication is not supported on this device.');
+        throw new Error('هذا الجهاز أو المتصفح لا يدعم التحقق الحيوي.');
     }
 
     const challenge = new Uint8Array(32);
@@ -57,8 +61,12 @@ export const registerBiometrics = async (userId: string, email: string) => {
 };
 
 export const verifyBiometrics = async (credentialIdBase64: string) => {
+    if (!window.isSecureContext) {
+        throw new Error('التحقق الحيوي يتطلب اتصلاً آمناً (HTTPS).');
+    }
+
     if (!window.PublicKeyCredential) {
-        throw new Error('Biometric authentication is not supported on this device.');
+        throw new Error('هذا الجهاز أو المتصفح لا يدعم التحقق الحيوي.');
     }
 
     const challenge = new Uint8Array(32);
