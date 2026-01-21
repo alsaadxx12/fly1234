@@ -5,6 +5,7 @@ import ProfileDocuments from './components/ProfileDocuments';
 import ProfileAttendance from './components/ProfileAttendance';
 import ProfileLeaves from './components/ProfileLeaves';
 import { Loader2 } from 'lucide-react';
+import MobileSystemNav from '../../components/MobileSystemNav';
 
 export default function ProfileContent() {
   const { employee, loading } = useAuth();
@@ -18,7 +19,8 @@ export default function ProfileContent() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-6">
+      <MobileSystemNav />
       <ProfileHeader employee={employee} />
       <ProfileStats employee={employee} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

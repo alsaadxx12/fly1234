@@ -14,6 +14,7 @@ import { getWhatsAppSettings } from '../lib/collections/whatsapp';
 import { doc, onSnapshot, getDoc } from 'firebase/firestore';
 import { useWhatsAppApi } from '../pages/Announcements/hooks/useWhatsAppApi';
 import Sidebar from './Sidebar';
+import MobileBottomNav from './MobileBottomNav';
 import { menuItems } from '../lib/constants';
 import GlobalModals from './GlobalModals';
 import useIssues from '../hooks/useIssues';
@@ -424,13 +425,16 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <header className={`flex-shrink-0 bg-gradient-to-r ${customSettings.headerGradient} dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 z-50 safe-top shadow-lg relative`}>
         <div className="flex items-center justify-between px-3 md:px-6 h-14 md:h-[60px] text-white">
           <div className="flex items-center gap-2 md:gap-4 flex-1 min-w-0 h-full">
-            <button
-              onClick={toggleSidebar}
-              className="md:hidden p-1.5 sm:p-2.5 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all border border-white/20 shadow-lg group"
-              aria-label="Toggle sidebar"
-            >
-              <Menu className="w-4 h-4 md:w-5 h-5 text-white" />
-            </button>
+            {/* Sidebar toggle hidden on mobile as requested - using bottom nav instead */}
+            <div className="hidden md:block">
+              <button
+                onClick={toggleSidebar}
+                className="p-1.5 sm:p-2.5 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all border border-white/20 shadow-lg group"
+                aria-label="Toggle sidebar"
+              >
+                <Menu className="w-4 h-4 md:w-5 h-5 text-white" />
+              </button>
+            </div>
 
             {/* Logo for both mobile and web */}
             <div className="flex items-center">
@@ -773,6 +777,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </main>
       </div>
 
+      <MobileBottomNav />
       <GlobalModals />
     </div >
   );
