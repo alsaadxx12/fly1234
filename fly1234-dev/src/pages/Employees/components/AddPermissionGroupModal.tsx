@@ -18,6 +18,7 @@ interface Permission {
   filter?: boolean;
   auditTransfer?: boolean;
   auditEntry?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 interface FormData {
@@ -217,7 +218,7 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
       isOpen={isOpen}
       onClose={onClose}
       title="إضافة مجموعة صلاحيات"
-      maxWidth="max-w-3xl"
+      size="lg"
     >
       <div className="flex flex-col h-full">
         {error && (
@@ -321,10 +322,10 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
                       }}
                       disabled={isAdmin}
                       className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${isAdmin
-                          ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                          : areAllPermissionsEnabled(window.name)
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100'
+                        ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                        : areAllPermissionsEnabled(window.name)
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100'
                         }`}
                     >
                       {areAllPermissionsEnabled(window.name) ? 'إلغاء الكل' : 'تحديد الكل'}
@@ -352,14 +353,14 @@ export default function AddPermissionGroupModal({ isOpen, onClose, webWindows, o
                           }}
                           disabled={isAdmin}
                           className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-bold transition-all border ${isAdmin || isChecked
-                              ? (
-                                permission === 'view' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100' :
-                                  permission === 'add' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100' :
-                                    permission === 'edit' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border-orange-100' :
-                                      permission === 'delete' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100' :
-                                        'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100'
-                              )
-                              : 'bg-gray-50 dark:bg-gray-900/20 text-gray-500 border-gray-100 dark:border-gray-700 hover:bg-gray-100'
+                            ? (
+                              permission === 'view' ? 'bg-green-50 dark:bg-green-900/20 text-green-600 border-green-100' :
+                                permission === 'add' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 border-blue-100' :
+                                  permission === 'edit' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 border-orange-100' :
+                                    permission === 'delete' ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border-red-100' :
+                                      'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 border-indigo-100'
+                            )
+                            : 'bg-gray-50 dark:bg-gray-900/20 text-gray-500 border-gray-100 dark:border-gray-700 hover:bg-gray-100'
                             }`}
                         >
                           {(isAdmin || isChecked) && <Check className="w-3 h-3" />}

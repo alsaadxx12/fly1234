@@ -83,7 +83,7 @@ const ProfileAttendance: React.FC<ProfileAttendanceProps> = ({ employeeId }) => 
           <div className={`col-span-full p-12 rounded-3xl border-2 border-dashed flex flex-col items-center gap-4 ${theme === 'dark' ? 'border-white/5' : 'border-gray-100'
             }`}>
             <div className="p-4 bg-gray-100 dark:bg-white/5 rounded-full">
-              <History className="w-8 h-8 text-gray-400" />
+              <Calendar className="w-8 h-8 text-gray-400" />
             </div>
             <p className="text-gray-500 font-bold">لا يوجد سجل حضور مسجل</p>
           </div>

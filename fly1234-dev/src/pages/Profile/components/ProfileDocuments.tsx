@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { Employee, EmployeeFile } from '../../../lib/collections/employees';
 import { useTheme } from '../../../contexts/ThemeContext';
-import { useAuth } from '../../../contexts/AuthContext';
-import { Paperclip, FileText, Trash2, Upload, Loader2, AlertCircle } from 'lucide-react';
+import { Paperclip, FileText, Trash2 } from 'lucide-react';
 import UploadFileModal from '../../Employees/components/UploadFileModal';
 import { deleteEmployeeFile } from '../../../lib/collections/employees';
 import { useNotification } from '../../../contexts/NotificationContext';
@@ -21,20 +20,17 @@ const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ employee }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { showNotification } = useNotification();
 
-  // to force re-render after upload
-  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleDeleteFile = async () => {
     if (!fileToDelete || !employee.id) return;
     setIsDeleting(true);
     try {
       await deleteEmployeeFile(employee.id, fileToDelete.id);
-      showNotification('success', 'تم حذف الملف بنجاح');
+      showNotification('success', 'نجاح', 'تم حذف الملف بنجاح');
       setFileToDelete(null);
       // Force refresh
-      setRefreshKey(prev => prev + 1);
     } catch (err) {
-      showNotification('error', 'فشل حذف الملف');
+      showNotification('error', 'خطأ', 'فشل حذف الملف');
     } finally {
       setIsDeleting(false);
     }
@@ -81,7 +77,7 @@ const ProfileDocuments: React.FC<ProfileDocumentsProps> = ({ employee }) => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         employee={employee}
-        onFileUploaded={() => setRefreshKey(p => p + 1)}
+        onFileUploaded={() => { }}
       />
 
       <ModernModal isOpen={!!fileToDelete} onClose={() => setFileToDelete(null)} title="تأكيد الحذف" size="sm">

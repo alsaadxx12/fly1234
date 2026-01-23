@@ -11,7 +11,8 @@ import {
   Search,
   Palette,
   Printer,
-  Megaphone
+  Megaphone,
+  FileText
 } from 'lucide-react';
 
 import WhatsAppSettings from './Settings/components/WhatsAppSettings';
@@ -21,9 +22,10 @@ import CompanySettings from './Settings/components/CompanySettings';
 import NotificationSettings from './Settings/components/NotificationSettings';
 import ThemeSettings from './Settings/components/ThemeSettings';
 import PrintTemplateEditor from './Settings/components/PrintTemplateEditor';
+import StatementTemplateEditor from './Settings/components/StatementTemplateEditor';
 import AdSettings from './Settings/components/AdSettings';
 
-type TabId = 'theme' | 'print' | 'companies' | 'accounts' | 'notifications' | 'whatsapp' | 'ads';
+type TabId = 'theme' | 'print' | 'statement-template' | 'companies' | 'accounts' | 'notifications' | 'whatsapp' | 'ads';
 
 interface TabConfig {
   id: TabId;
@@ -43,7 +45,7 @@ function Settings() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab') as TabId;
-    if (tab && ['theme', 'companies', 'notifications', 'whatsapp', 'accounts', 'print', 'ads'].includes(tab)) {
+    if (tab && ['theme', 'companies', 'notifications', 'whatsapp', 'accounts', 'print', 'statement-template', 'ads'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [location]);
@@ -65,6 +67,13 @@ function Settings() {
       label: 'الطباعة',
       icon: Printer,
       description: 'تخصيص قوالب الطباعة',
+      category: 'general'
+    },
+    {
+      id: 'statement-template',
+      label: 'قالب طباعة الكشف',
+      icon: FileText,
+      description: 'بناء قالب HTML لطباعة كشف الحساب',
       category: 'general'
     },
     {
@@ -132,7 +141,7 @@ function Settings() {
 
   return (
     <main className="flex-1 overflow-y-auto h-full flex flex-col bg-gray-50 dark:bg-gray-900">
-      <div className="container mx-auto py-4 md:py-6 px-3 md:px-4 lg:px-8 flex-1 flex flex-col max-w-7xl">
+      <div className="w-full py-4 md:py-6 px-3 md:px-4 lg:px-6 flex-1 flex flex-col">
         <div className="mb-4 md:mb-6">
           <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
             <div className="p-2 md:p-3 bg-blue-600 rounded-lg">
@@ -162,9 +171,9 @@ function Settings() {
 
         <NetworkStatusBanner />
 
-        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-full mt-3 md:mt-4">
-          <div className="w-full lg:w-72 flex-shrink-0">
-            <div className="rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 lg:sticky lg:top-6">
+        <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-full mt-3 md:mt-4 w-full">
+          <div className="w-full lg:w-64 xl:w-72 flex-shrink-0">
+            <div className="rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 lg:sticky lg:top-6 h-fit">
               <div className="p-3 md:p-4 border-b border-gray-200 dark:border-gray-700">
                 <h2 className="text-xs md:text-sm font-semibold text-gray-900 dark:text-white">
                   أقسام الإعدادات
@@ -220,9 +229,10 @@ function Settings() {
             </div>
           </div>
 
-          <div className="flex-1 rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4 md:p-6 overflow-auto">
+          <div className="flex-1 min-w-0 rounded-lg border bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700 p-4 md:p-6 overflow-auto">
             {activeTab === 'theme' && <ThemeSettings />}
             {activeTab === 'print' && <PrintTemplateEditor />}
+            {activeTab === 'statement-template' && <StatementTemplateEditor />}
             {activeTab === 'companies' && <CompanySettings />}
             {activeTab === 'notifications' && <NotificationSettings />}
             {activeTab === 'whatsapp' && <WhatsAppSettings setActiveTab={(id: any) => setActiveTab(id)} />}

@@ -41,7 +41,7 @@ export default {
         },
         accent: {
           50: '#eef2ff',
-          100: '#e0e7ff', 
+          100: '#e0e7ff',
           200: '#c7d2fe',
           300: '#a5b4fc',
           400: '#818cf8',
@@ -62,6 +62,7 @@ export default {
         slideDown: "slideDown 0.2s ease-out forwards",
         float: "float 10s ease-in-out infinite",
         textShine: "textShine 5s ease-in-out infinite alternate",
+        'pulse-slow': 'pulse 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         blob: {

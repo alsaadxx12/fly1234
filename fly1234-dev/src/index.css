@@ -19,7 +19,22 @@ body,
 html.dark,
 body.dark,
 html.dark #root {
-  background: linear-gradient(135deg, #1a1d29 0%, #1f2937 50%, #111827 100%) !important;
+  background: radial-gradient(circle at 50% 0%, #1a154d 0%, #0d0b21 50%, #080716 100%) !important;
+  background-attachment: fixed !important;
+}
+
+/* Global Dark Mode Overrides for Deep Purple Theme */
+.dark .bg-slate-900,
+.dark .bg-gray-900,
+.dark .bg-gray-800 {
+  background-color: rgba(20, 18, 56, 0.7) !important;
+  backdrop-filter: blur(12px);
+}
+
+.dark .border-gray-700,
+.dark .border-gray-800,
+.dark .border-white\/10 {
+  border-color: rgba(99, 102, 241, 0.2) !important;
 }
 
 @layer utilities {

@@ -68,6 +68,41 @@ export const sendWhatsAppImage = async (
   }
 };
 
+export const sendWhatsAppDocument = async (
+  instanceId: string,
+  token: string,
+  to: string,
+  documentDataUrlOrUrl: string, // Can be base64 data URL or HTTP/HTTPS URL
+  filename: string,
+  caption?: string
+) => {
+  const url = `https://api.ultramsg.com/${instanceId}/messages/document`;
+
+  const params = new URLSearchParams();
+  params.append('token', token);
+  params.append('to', to);
+  params.append('document', documentDataUrlOrUrl); // Can be URL or base64
+  params.append('filename', filename);
+  if (caption) {
+    params.append('caption', caption);
+  }
+
+  try {
+    const response = await axios.post(url, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error sending WhatsApp document:', error);
+    if (axios.isAxiosError(error) && error.response) {
+      throw new Error(`Server responded with ${error.response.status}: ${JSON.stringify(error.response.data)}`);
+    }
+    throw new Error('فشل إرسال الملف.');
+  }
+};
+
 
 export const processMessageTemplate = (template: string, data: any): string => {
   let processed = template;

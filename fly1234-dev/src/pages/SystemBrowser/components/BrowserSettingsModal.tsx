@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Save, Globe, Key } from 'lucide-react';
 
 interface BrowserSettingsModalProps {
@@ -18,11 +19,39 @@ const BrowserSettingsModal: React.FC<BrowserSettingsModalProps> = ({
 }) => {
     const [endpoint, setEndpoint] = useState(initialEndpoint);
     const [token, setToken] = useState(initialToken);
+    const [mounted, setMounted] = useState(false);
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
 
-    return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    useEffect(() => {
+        if (isOpen) {
+            // Prevent body scroll when modal is open
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
+
+    if (!isOpen || !mounted) return null;
+
+    const modalContent = (
+        <div 
+            className="fixed inset-0 flex items-center justify-center p-4"
+            style={{ 
+                zIndex: 99999,
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0
+            }}
+        >
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm animate-in fade-in duration-200"
@@ -30,7 +59,14 @@ const BrowserSettingsModal: React.FC<BrowserSettingsModalProps> = ({
             />
 
             {/* Modal */}
-            <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+            <div 
+                className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200"
+                style={{ 
+                    zIndex: 100000,
+                    position: 'relative'
+                }}
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="text-xl font-black text-slate-800 dark:text-white">إعدادات الاتصال</h3>
@@ -97,6 +133,8 @@ const BrowserSettingsModal: React.FC<BrowserSettingsModalProps> = ({
             </div>
         </div>
     );
+
+    return createPortal(modalContent, document.body);
 };
 
 export default BrowserSettingsModal;

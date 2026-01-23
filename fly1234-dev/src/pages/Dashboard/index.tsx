@@ -1,39 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useLanguage } from '../../contexts/LanguageContext';
-import { useTheme } from '../../contexts/ThemeContext';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
+import { collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
-import StatisticsGrid from './components/StatisticsGrid';
-import AdCarousel from './components/AdCarousel';
 import ExchangeRateChart from './components/ExchangeRateChart';
 import RecentVouchers from './components/RecentVouchers';
+import StatCard from './components/StatCard';
 import { useExchangeRate } from '../../contexts/ExchangeRateContext';
 import EmployeeOfTheMonthBanner from '../../components/EmployeeOfTheMonthBanner';
-import { Issue } from '../PendingIssues/types';
-import { MastercardIssue } from '../MastercardIssues/types';
-import { Employee } from '../../lib/collections/employees';
-
-interface TopPerformer {
-  name: string;
-  count: number;
-  image?: string;
-}
+import { Building2, TrendingUp, TrendingDown } from 'lucide-react';
 
 export default function DashboardContent() {
-  const { t } = useLanguage();
-  const { theme } = useTheme();
   const { user } = useAuth();
   const [stats, setStats] = useState({
     total: 0,
     credit: 0,
     cash: 0,
-    history: [] as any[]
   });
-  const [issueStats, setIssueStats] = useState<{
-    topIssuesAdded: TopPerformer[];
-    topIssuesResolved: TopPerformer[];
-  }>({ topIssuesAdded: [], topIssuesResolved: [] });
   const { currentRate, history: rateHistory, isLoading: isLoadingRate } = useExchangeRate();
 
   useEffect(() => {
@@ -56,78 +38,13 @@ export default function DashboardContent() {
         const credit = creditSnapshot.data().count;
         const cash = cashSnapshot.data().count;
 
-        const history = Array.from({ length: 30 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - i);
-          return {
-            date: date.toISOString().split('T')[0],
-            total: Math.floor(Math.random() * 10) + 100 - i,
-            credit: Math.floor(Math.random() * 5) + 30 - Math.floor(i / 2),
-            cash: Math.floor(Math.random() * 5) + 70 - Math.floor(i / 2),
-          };
-        }).reverse();
-
-        setStats({ total, credit, cash, history });
+        setStats({ total, credit, cash });
       } catch (err) {
         console.error("Error fetching stats:", err);
       }
     };
 
-    const fetchIssueStats = async () => {
-      if (!user) return;
-      try {
-        const employeesSnapshot = await getDocs(collection(db, 'employees'));
-        const employees = employeesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Employee));
-
-        const employeeImageMap = new Map<string, string | undefined>();
-        employees.forEach(emp => {
-          let imageUrl = emp.image;
-          if (!imageUrl && emp.files && Array.isArray(emp.files)) {
-            const profilePicFile = emp.files.find((file: any) => file.name === 'صورة شخصية');
-            if (profilePicFile) {
-              imageUrl = profilePicFile.url;
-            }
-          }
-          if (emp.name) {
-            employeeImageMap.set(emp.name, imageUrl);
-          }
-        });
-
-        const issuesSnapshot = await getDocs(collection(db, 'issues'));
-        const mastercardIssuesSnapshot = await getDocs(collection(db, 'mastercard_issues'));
-
-        const issues = issuesSnapshot.docs.map(doc => doc.data() as Issue);
-        const mastercardIssues = mastercardIssuesSnapshot.docs.map(doc => doc.data() as MastercardIssue);
-
-        const allIssues = [...issues, ...mastercardIssues];
-
-        const addedCounts: { [name: string]: number } = {};
-        const resolvedCounts: { [name: string]: number } = {};
-
-        allIssues.forEach(issue => {
-          if (issue.createdByName) {
-            addedCounts[issue.createdByName] = (addedCounts[issue.createdByName] || 0) + 1;
-          }
-          if (issue.status === 'resolved' && issue.resolvedByName) {
-            resolvedCounts[issue.resolvedByName] = (resolvedCounts[issue.resolvedByName] || 0) + 1;
-          }
-        });
-
-        const sortedAdded = Object.entries(addedCounts).sort((a, b) => b[1] - a[1]);
-        const sortedResolved = Object.entries(resolvedCounts).sort((a, b) => b[1] - a[1]);
-
-        setIssueStats({
-          topIssuesAdded: sortedAdded.slice(0, 3).map(([name, count]) => ({ name, count, image: employeeImageMap.get(name) })),
-          topIssuesResolved: sortedResolved.slice(0, 3).map(([name, count]) => ({ name, count, image: employeeImageMap.get(name) })),
-        });
-
-      } catch (err) {
-        console.error("Error fetching issue stats:", err);
-      }
-    };
-
     fetchStats();
-    fetchIssueStats();
   }, [user]);
 
   const formattedRateHistory = useMemo(() => {
@@ -143,26 +60,39 @@ export default function DashboardContent() {
 
   return (
     <div className="space-y-6">
-      <AdCarousel />
-      <StatisticsGrid
-        stats={stats}
-        issueStats={issueStats}
-        currentRate={currentRate}
-        isLoadingRate={isLoadingRate}
-      />
-      <EmployeeOfTheMonthBanner />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <ExchangeRateChart
-            data={formattedRateHistory}
-            currentRate={currentRate}
-            isLoading={isLoadingRate}
-          />
-        </div>
-        <div className="h-full">
-          <RecentVouchers />
-        </div>
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <StatCard
+          title="إجمالي الكيانات"
+          value={stats.total}
+          icon={<Building2 className="w-6 h-6" />}
+          color="primary"
+        />
+        <StatCard
+          title="الشركات النقد"
+          value={stats.cash}
+          icon={<TrendingUp className="w-6 h-6" />}
+          color="green"
+        />
+        <StatCard
+          title="الشركات الآجل"
+          value={stats.credit}
+          icon={<TrendingDown className="w-6 h-6" />}
+          color="red"
+        />
       </div>
+
+      {/* Exchange Rate Chart */}
+      <ExchangeRateChart
+        data={formattedRateHistory}
+        currentRate={currentRate}
+        isLoading={isLoadingRate}
+      />
+
+      <EmployeeOfTheMonthBanner />
+      
+      {/* Recent Vouchers */}
+      <RecentVouchers />
     </div>
   );
 }

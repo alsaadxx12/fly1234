@@ -1,8 +1,8 @@
 import React from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { Building2, DollarSign, CreditCard, Phone, Mail, Hash, MessageCircle, Users, Search, X, AlertCircle, Sparkles, Info } from 'lucide-react';
+import { Building2, DollarSign, CreditCard, Phone, Mail, Hash, Users, Search, X, AlertCircle, Sparkles, Info } from 'lucide-react';
 import { CompanyFormData } from '../hooks/useCompanies';
-import useWhatsAppGroups from '../../../pages/Announcements/hooks/useWhatsAppGroups';
+import useWhatsAppGroups from '../../../hooks/useWhatsAppGroups';
 import { useAuth } from '../../../contexts/AuthContext';
 import { collection, query, where, getDocs, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
@@ -93,7 +93,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
   const filteredGroups = React.useMemo(() => {
     if (!whatsAppSearchQuery) return whatsappGroups;
     const query = whatsAppSearchQuery.toLowerCase();
-    return whatsappGroups.filter(group =>
+    return whatsappGroups.filter((group: any) =>
       group.name.toLowerCase().includes(query) ||
       group.id.toLowerCase().includes(query)
     );
@@ -161,8 +161,8 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
 
     if (selectedWhatsAppGroup) {
       actualSetFormData(prev => ({
@@ -173,12 +173,13 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
     }
 
     if (onSubmit) {
-      const successResult = await onSubmit(e);
+      const successResult = await onSubmit(e!);
       if (successResult) {
         onClose();
       }
-    } else {
-      await handleLocalSubmit(e);
+    }
+    else {
+      await handleLocalSubmit(e!);
     }
   };
 
@@ -205,7 +206,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
             type="submit"
             variant="primary"
             loading={isSubmitting || localIsSubmitting}
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()}
             className="px-12 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 shadow-xl shadow-blue-500/20 hover:scale-[1.02] active:scale-95 transition-all"
           >
             إضافة الشركة
@@ -390,7 +391,7 @@ const AddCompanyModal: React.FC<AddCompanyModalProps> = ({
                       ) : filteredGroups.length === 0 ? (
                         <div className="p-16 text-center text-xs text-gray-400 font-black opacity-40">لا توجد مجموعات حالياً</div>
                       ) : (
-                        filteredGroups.slice(0, 8).map(group => (
+                        filteredGroups.slice(0, 8).map((group: any) => (
                           <div key={group.id} className={`flex items-center gap-4 p-4 cursor-pointer transition-all rounded-2xl ${theme === 'dark' ? 'hover:bg-emerald-500/10' : 'hover:bg-emerald-50'
                             }`} onClick={() => { setSelectedWhatsAppGroup({ id: group.id, name: group.name }); setShowWhatsAppSearch(false); }}>
                             <div className={`p-3 rounded-xl ${theme === 'dark' ? 'bg-gray-900' : 'bg-emerald-100'}`}><Users className="w-5 h-5 text-emerald-600" /></div>

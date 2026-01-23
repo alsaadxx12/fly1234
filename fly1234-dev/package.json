@@ -23,6 +23,8 @@
     "framer-motion": "^12.27.0",
     "html2canvas": "^1.4.1",
     "jalali-moment": "^3.3.11",
+    "jspdf": "^4.0.0",
+    "jspdf-autotable": "^5.0.7",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.359.0",
     "qrcode": "^1.5.3",

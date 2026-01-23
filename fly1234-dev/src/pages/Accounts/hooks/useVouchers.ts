@@ -1,13 +1,18 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { collection, getDocs, query, where, orderBy, Timestamp, deleteDoc, doc, addDoc, serverTimestamp, getDoc, updateDoc, setDoc, onSnapshot, limit, startAfter, endBefore, limitToLast, DocumentData, QueryDocumentSnapshot, or } from 'firebase/firestore';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { collection, getDocs, query, where, orderBy, Timestamp, deleteDoc, doc, addDoc, serverTimestamp, getDoc, updateDoc, setDoc, limit, startAfter, DocumentData, QueryDocumentSnapshot } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
 import { addDeletedVoucher } from '../../../lib/collections/safes';
 import { useAuth } from '../../../contexts/AuthContext';
-import { Ticket, TicketType, Passenger } from '../types';
+import { Ticket } from '../../Tickets/types';
 import { useNotification } from '../../../contexts/NotificationContext';
 
 interface EmployeeCache {
   [uid: string]: string;
+}
+
+interface Voucher extends Ticket {
+  settlement?: boolean;
+  confirmation?: boolean;
 }
 
 interface UseVouchersProps {
@@ -31,9 +36,9 @@ export default function useVouchers({
   dateTo,
   itemsPerPage = 15,
 }: UseVouchersProps) {
-  const { user, employee, checkPermission } = useAuth();
+  const { user, checkPermission } = useAuth();
   const { showNotification } = useNotification();
-  const [vouchers, setVouchers] = useState<Ticket[]>([]);
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState<string | null>(null);
@@ -142,7 +147,7 @@ export default function useVouchers({
           ...data,
           createdAt: data.createdAt?.toDate() || new Date(),
           createdBy: data.createdById || data.createdBy || data.employeeId || '',
-        } as Ticket;
+        } as Voucher;
       });
 
       const employeeIds = [...new Set(vouchersData.map(v => v.createdBy).filter(Boolean))];
@@ -301,9 +306,9 @@ export default function useVouchers({
     }
   }, [fetchVouchersPage]);
 
-  const toggleSettlement = useCallback(async (voucher: Ticket) => {
+  const toggleSettlement = useCallback(async (voucher: Voucher) => {
     if (!checkPermission('accounts', 'settlement')) {
-      showNotification('error', 'ليس لديك صلاحية لتغيير حالة التحاسب.');
+      showNotification('error', 'خطأ في الصلاحية', 'ليس لديك صلاحية لتغيير حالة التحاسب.');
       return;
     }
 
@@ -312,9 +317,9 @@ export default function useVouchers({
     fetchVouchersPage('first');
   }, [checkPermission, showNotification, fetchVouchersPage]);
 
-  const toggleConfirmation = useCallback(async (voucher: Ticket) => {
+  const toggleConfirmation = useCallback(async (voucher: Voucher) => {
     if (!checkPermission('accounts', 'confirm')) {
-      showNotification('error', 'ليس لديك صلاحية لتغيير حالة التأكيد.');
+      showNotification('error', 'خطأ في الصلاحية', 'ليس لديك صلاحية لتغيير حالة التأكيد.');
       return;
     }
 

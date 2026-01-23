@@ -84,20 +84,9 @@ export const menuItems = [
     ]
   },
   {
-    textKey: 'الشركات والإعلانات',
+    path: '/companies',
     icon: Building2,
-    subItems: [
-      {
-        path: '/companies',
-        icon: Building2,
-        textKey: 'companies',
-      },
-      {
-        path: '/announcements',
-        icon: Megaphone,
-        textKey: 'announcements',
-      },
-    ]
+    textKey: 'companies',
   },
   {
     textKey: 'المشاكل والتقارير',
@@ -143,6 +132,12 @@ export const menuItems = [
         path: '/data-fly',
         textKey: 'داتا فلاي (Data Fly)',
         icon: LayoutGrid,
+        permissions: { page: 'الإعدادات والربط', actions: ['view'] }
+      },
+      {
+        path: '/buyers-accounts',
+        textKey: 'حسابات البايرز',
+        icon: Users,
         permissions: { page: 'الإعدادات والربط', actions: ['view'] }
       }
     ]

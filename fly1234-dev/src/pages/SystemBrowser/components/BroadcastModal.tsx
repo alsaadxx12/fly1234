@@ -15,9 +15,9 @@ import {
     AlertTriangle,
     Check
 } from 'lucide-react';
-import useMessageSending from '../../Announcements/hooks/useMessageSending';
-import useImageUpload from '../../Announcements/hooks/useImageUpload';
-import { WhatsAppAccountSelector } from '../../Announcements/components/WhatsAppAccountSelector';
+import useMessageSending from '../libs/whatsapp/useMessageSending';
+import useImageUpload from '../libs/whatsapp/useImageUpload';
+import { WhatsAppAccountSelector } from '../libs/whatsapp/WhatsAppAccountSelector';
 import { getGlobalWhatsAppSettings } from '../../../lib/collections/whatsapp';
 
 interface BroadcastModalProps {

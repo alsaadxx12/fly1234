@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { User, Mail, Phone, Edit, Download, Camera, Loader2 } from 'lucide-react';
+import { Mail, Phone, Edit, Download, Camera, Loader2 } from 'lucide-react';
 import { Employee } from '../../../lib/collections/employees';
 import { useTheme } from '../../../contexts/ThemeContext';
 import EditProfileModal from './EditProfileModal';
@@ -39,13 +39,13 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ employee }) => {
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      showNotification('error', 'يجب أن يكون حجم الصورة أقل من 2 ميجابايت');
+      showNotification('error', 'خطأ في الحجم', 'يجب أن يكون حجم الصورة أقل من 2 ميجابايت');
       return;
     }
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      showNotification('error', 'يرجى اختيار ملف صورة صالح');
+      showNotification('error', 'خطأ في النوع', 'يرجى اختيار ملف صورة صالح');
       return;
     }
 
@@ -56,10 +56,10 @@ const ProfileHeader: React.FC<ProfileHeaderProps> = ({ employee }) => {
       const downloadURL = await getDownloadURL(storageRef);
 
       await updateEmployeeProfile(employee.id!, { image: downloadURL });
-      showNotification('success', 'تم تحديث الصورة الشخصية بنجاح');
+      showNotification('success', 'نجاح', 'تم تحديث الصورة الشخصية بنجاح');
     } catch (error) {
       console.error('Error uploading image:', error);
-      showNotification('error', 'فشل في رفع الصورة. يرجى المحاولة مرة أخرى');
+      showNotification('error', 'فشل الرفع', 'فشل في رفع الصورة. يرجى المحاولة مرة أخرى');
     } finally {
       setIsUploading(false);
     }

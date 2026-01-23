@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Download, Loader2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { AlertTriangle, Check, X } from 'lucide-react';
@@ -219,6 +220,26 @@ const ExportToExcelButton: React.FC<ExportToExcelButtonProps> = ({
     setIsExporting(false);
   }
 
+  // Handle ESC key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showExportOptions) {
+        setShowExportOptions(false);
+      }
+    };
+
+    if (showExportOptions) {
+      document.addEventListener('keydown', handleEscape);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'unset';
+    };
+  }, [showExportOptions]);
+
   return (
     <div className="relative">
       <button
@@ -234,132 +255,154 @@ const ExportToExcelButton: React.FC<ExportToExcelButtonProps> = ({
       </button>
 
       {/* Export Options Modal */}
-      {showExportOptions && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm" onClick={() => setShowExportOptions(false)}>
-          <div className="bg-white rounded-lg shadow-lg p-5 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-gray-800">خيارات التصدير</h3>
-              <button 
-                onClick={() => setShowExportOptions(false)}
-                className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3 mb-5">
-              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100 text-sm text-blue-700 flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-                <span>اختر نوع السندات التي تريد تصديرها</span>
+      {showExportOptions && createPortal(
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999] backdrop-blur-sm"
+            onClick={() => setShowExportOptions(false)}
+            style={{ 
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+            }}
+          >
+            {/* Modal Content */}
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                position: 'relative',
+                zIndex: 100000,
+              }}
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h3 className="text-lg font-bold text-gray-800 dark:text-white">خيارات التصدير</h3>
+                <button 
+                  onClick={() => setShowExportOptions(false)}
+                  className="p-1.5 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
               </div>
 
-              <div className="space-y-3">
-                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="exportFilter"
-                    checked={exportFilter === 'all'}
-                    onChange={() => setExportFilter('all')}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-800">جميع السندات</div>
-                    <div className="text-xs text-gray-500">تصدير كافة السندات بغض النظر عن حالتها</div>
-                  </div>
-                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {vouchers.length} سند
-                  </div>
-                </label> 
+              <div className="space-y-3 mb-5">
+                <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800 text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+                  <span>اختر نوع السندات التي تريد تصديرها</span>
+                </div>
 
-                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="exportFilter"
-                    checked={exportFilter === 'unconfirmed'}
-                    onChange={() => setExportFilter('unconfirmed')}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-800">السندات غير المؤكدة</div>
-                    <div className="text-xs text-gray-500">تصدير السندات التي لم يتم تأكيدها فقط</div>
-                  </div>
-                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {vouchers.filter(v => v.confirmation !== true).length} سند
-                  </div>
-                  <div className="mr-auto p-1.5 bg-orange-100 rounded-lg flex-shrink-0">
-                    <X className="w-4 h-4 text-orange-600" />
-                  </div>
-                </label>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <input
+                      type="radio"
+                      name="exportFilter"
+                      checked={exportFilter === 'all'}
+                      onChange={() => setExportFilter('all')}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800 dark:text-white">جميع السندات</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">تصدير كافة السندات بغض النظر عن حالتها</div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                      {vouchers.length} سند
+                    </div>
+                  </label> 
 
-                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="exportFilter"
-                    checked={exportFilter === 'unsettled'}
-                    onChange={() => setExportFilter('unsettled')}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-800">السندات غير المتحاسب عليها</div>
-                    <div className="text-xs text-gray-500">تصدير السندات التي لم يتم التحاسب عليها فقط</div>
-                  </div>
-                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {vouchers.filter(v => v.settlement !== true).length} سند
-                  </div>
-                  <div className="mr-auto p-1.5 bg-orange-100 rounded-lg flex-shrink-0">
-                    <X className="w-4 h-4 text-orange-600" />
-                  </div>
-                </label>
+                  <label className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <input
+                      type="radio"
+                      name="exportFilter"
+                      checked={exportFilter === 'unconfirmed'}
+                      onChange={() => setExportFilter('unconfirmed')}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800 dark:text-white">السندات غير المؤكدة</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">تصدير السندات التي لم يتم تأكيدها فقط</div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                      {vouchers.filter(v => v.confirmation !== true).length} سند
+                    </div>
+                    <div className="mr-auto p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex-shrink-0">
+                      <X className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </label>
 
-                <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer transition-all hover:bg-gray-50">
-                  <input
-                    type="radio"
-                    name="exportFilter"
-                    checked={exportFilter === 'confirmed-unsettled'}
-                    onChange={() => setExportFilter('confirmed-unsettled')}
-                    className="w-4 h-4 text-blue-600 focus:ring-blue-500"
-                  />
-                  <div>
-                    <div className="font-medium text-gray-800">المؤكدة غير المتحاسب عليها</div>
-                    <div className="text-xs text-gray-500">تصدير السندات المؤكدة التي لم يتم التحاسب عليها</div>
-                  </div>
-                  <div className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                    {vouchers.filter(v => v.confirmation === true && v.settlement !== true).length} سند
-                  </div>
-                  <div className="mr-auto p-1.5 bg-blue-100 rounded-lg flex-shrink-0">
-                    <Check className="w-4 h-4 text-blue-600" />
-                  </div>
-                </label>
+                  <label className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <input
+                      type="radio"
+                      name="exportFilter"
+                      checked={exportFilter === 'unsettled'}
+                      onChange={() => setExportFilter('unsettled')}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800 dark:text-white">السندات غير المتحاسب عليها</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">تصدير السندات التي لم يتم التحاسب عليها فقط</div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                      {vouchers.filter(v => v.settlement !== true).length} سند
+                    </div>
+                    <div className="mr-auto p-1.5 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex-shrink-0">
+                      <X className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+                    </div>
+                  </label>
+
+                  <label className="flex items-center gap-3 p-3 border dark:border-gray-700 rounded-lg cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <input
+                      type="radio"
+                      name="exportFilter"
+                      checked={exportFilter === 'confirmed-unsettled'}
+                      onChange={() => setExportFilter('confirmed-unsettled')}
+                      className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-gray-800 dark:text-white">المؤكدة غير المتحاسب عليها</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">تصدير السندات المؤكدة التي لم يتم التحاسب عليها</div>
+                    </div>
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded-full">
+                      {vouchers.filter(v => v.confirmation === true && v.settlement !== true).length} سند
+                    </div>
+                    <div className="mr-auto p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex-shrink-0">
+                      <Check className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </label>
+                </div>
               </div>
-            </div>
 
-            <div className="flex justify-end gap-3">
-              <button 
-                onClick={() => setShowExportOptions(false)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                إلغاء
-              </button>
-              <button
-                onClick={exportToExcel}
-                disabled={isExporting}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                {isExporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>جاري التصدير...</span>
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4" />
-                    <span>تصدير</span>
-                  </>
-                )}
-              </button>
+              <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
+                <button 
+                  onClick={() => setShowExportOptions(false)}
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  onClick={exportToExcel}
+                  disabled={isExporting}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>جاري التصدير...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4" />
+                      <span>تصدير</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>,
+        document.body
       )}
     </div>
   );
