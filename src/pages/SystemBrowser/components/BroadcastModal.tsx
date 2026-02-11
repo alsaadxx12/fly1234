@@ -11,7 +11,10 @@ import {
     RefreshCw,
     Activity,
     Send,
-    Smartphone
+    Smartphone,
+    ShieldCheck,
+    Clock,
+    Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useMessageSending from '../libs/whatsapp/useMessageSending';
@@ -34,11 +37,11 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
     const [selectedAccount, setSelectedAccount] = useState<{ instance_id: string; token: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sendingMethod, setSendingMethod] = useState<'api' | 'direct'>('api');
-    const [directSubMode, setDirectSubMode] = useState<'web' | 'app'>('web');
 
-    // Wizard State for Direct Mode
-    const [isWizardActive, setIsWizardActive] = useState(false);
-    const [wizardIndex, setWizardIndex] = useState(0);
+    // Safety States
+    const [useRandomDelay, setUseRandomDelay] = useState(true);
+    const [maxDelayMs, setMaxDelayMs] = useState(60000); // Default max 60s
+    const [useSpinTax, setUseSpinTax] = useState(true);
 
     const {
         isSending,
@@ -134,13 +137,21 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                     recipients: recipients,
                     recipientType: 'contact',
                     account: selectedAccount!,
-                    delayMs: currentDelayMs
+                    delayMs: currentDelayMs,
+                    maxDelayMs: maxDelayMs,
+                    useRandomDelay: useRandomDelay,
+                    useSpinTax: useSpinTax
                 });
             } else {
-                // Direct Method -> Activate Wizard instead of automated loop
-                setIsWizardActive(true);
-                setWizardIndex(0);
-                setIsSending(true); // Keep UI in "Sending" state
+                // Direct Method (wa.me)
+                for (let i = 0; i < recipients.length; i++) {
+                    const recipient = recipients[i];
+                    const phone = recipient.phone.replace(/\D/g, '');
+                    const encodedText = encodeURIComponent(message);
+                    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`, 'whatsapp_window');
+                    await new Promise(r => setTimeout(r, 1000));
+                }
+                setIsSending(false);
             }
 
             if (_onSend) {
@@ -235,26 +246,11 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                         </div>
                         <div className="w-px h-4 bg-white/10 mx-1.5" />
 
-                        {sendingMethod === 'api' ? (
+                        {sendingMethod === 'api' && (
                             <WhatsAppAccountSelector
                                 onAccountSelected={setSelectedAccount}
                                 initialAccount={selectedAccount}
                             />
-                        ) : (
-                            <div className="flex items-center gap-2 p-1 bg-black/10 rounded-xl border border-white/5">
-                                <button
-                                    onClick={() => setDirectSubMode('web')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[8px] font-black transition-all ${directSubMode === 'web' ? 'bg-indigo-500 text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                                >
-                                    WEB TAB
-                                </button>
-                                <button
-                                    onClick={() => setDirectSubMode('app')}
-                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${directSubMode === 'app' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
-                                >
-                                    NATIVE APP
-                                </button>
-                            </div>
                         )}
 
                         <div className="w-px h-6 bg-white/10 mx-1.5" />
@@ -354,6 +350,84 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                                 {error}
                             </motion.div>
                         )}
+
+                        {/* Smart Safety Engine Settings */}
+                        <div className="mx-2 p-5 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 rounded-[2rem] border border-indigo-500/10 space-y-4">
+                            <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                    <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+                                        <ShieldCheck className="w-4 h-4 text-indigo-500" />
+                                    </div>
+                                    <span className="text-[12px] font-black text-slate-700 dark:text-white uppercase tracking-tight">محرك الأمان الذكي</span>
+                                </div>
+                                <div className="px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                                    <span className="text-[8px] font-black text-emerald-500 uppercase">نشط</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Clock className="w-3 h-3" /> الحد الأدنى (ثانية)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={currentDelayMs / 1000}
+                                        onChange={(e) => setCurrentDelayMs(Number(e.target.value) * 1000)}
+                                        className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                                        <Clock className="w-3 h-3" /> الحد الأقصى (ثانية)
+                                    </label>
+                                    <input
+                                        type="number"
+                                        value={maxDelayMs / 1000}
+                                        onChange={(e) => setMaxDelayMs(Number(e.target.value) * 1000)}
+                                        className="w-full bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 pt-2">
+                                <label className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:bg-white dark:hover:bg-white/10 transition-all group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-1.5 rounded-lg transition-colors ${useRandomDelay ? 'bg-indigo-500/10 text-indigo-500' : 'bg-slate-100 dark:bg-white/10 text-slate-400'}`}>
+                                            <Activity className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-700 dark:text-white uppercase">توزيع عشوائي للفواصل</span>
+                                            <span className="text-[8px] font-bold text-slate-400">يحاكي سلوك البشر في الإرسال</span>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={useRandomDelay}
+                                        onChange={(e) => setUseRandomDelay(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                </label>
+
+                                <label className="flex items-center justify-between p-3 bg-white/50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 cursor-pointer hover:bg-white dark:hover:bg-white/10 transition-all group">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`p-1.5 rounded-lg transition-colors ${useSpinTax ? 'bg-purple-500/10 text-purple-500' : 'bg-slate-100 dark:bg-white/10 text-slate-400'}`}>
+                                            <Zap className="w-3.5 h-3.5" />
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="text-[10px] font-black text-slate-700 dark:text-white uppercase">تنويع محتوى الرسائل</span>
+                                            <span className="text-[8px] font-bold text-slate-400">مثال: {"{مرحباً|أهلاً|عزيزي}"}</span>
+                                        </div>
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        checked={useSpinTax}
+                                        onChange={(e) => setUseSpinTax(e.target.checked)}
+                                        className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                                    />
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Right: Recipient Status (7 cols) */}
@@ -407,74 +481,18 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                 </div>
 
                 {/* Progress Panel & Actions (Fixed Bottom) */}
-                <div className="shrink-0 p-4 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-transparent flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="shrink-0 p-4 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-[#0f172a] flex flex-col md:flex-row items-center justify-between gap-6">
                     <div className="flex-1 w-full md:w-auto">
                         <BroadcastProgressPanel
                             isSending={isSending}
                             isPaused={isPaused}
-                            sendProgress={isWizardActive ? {
-                                sent: wizardIndex,
-                                failed: 0,
-                                total: selectedUsers.length,
-                                current: `انتظار إرسال الرسالة رقم ${wizardIndex + 1}`
-                            } : sendProgress}
+                            sendProgress={sendProgress}
                             currentDelayMs={currentDelayMs}
                             onTogglePause={togglePause}
                             onSetDelay={setCurrentDelayMs}
                         />
                     </div>
-
-                    {isWizardActive ? (
-                        <div className="flex items-center gap-3">
-                            <div className="flex flex-col items-end mr-4">
-                                <span className="text-[10px] font-black text-slate-500 uppercase">المستلم الحالي</span>
-                                <span className="text-sm font-black text-indigo-500">{selectedUsers[wizardIndex]?.fullname || selectedUsers[wizardIndex]?.name}</span>
-                            </div>
-                            <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => {
-                                    const recipient = selectedUsers[wizardIndex];
-                                    const phone = (recipient.mobile || recipient.phone).replace(/\D/g, '');
-                                    const encodedText = encodeURIComponent(message);
-
-                                    let url = '';
-                                    let target = '_blank';
-
-                                    if (directSubMode === 'web') {
-                                        url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-                                        target = 'whatsapp_window';
-                                    } else {
-                                        url = `whatsapp://send?phone=${phone}&text=${encodedText}`;
-                                        target = '_self';
-                                    }
-
-                                    window.open(url, target);
-
-                                    // Move to next
-                                    if (wizardIndex < selectedUsers.length - 1) {
-                                        setWizardIndex(prev => prev + 1);
-                                    } else {
-                                        setIsWizardActive(false);
-                                        setIsSending(false);
-                                    }
-                                }}
-                                className="flex items-center gap-2.5 h-12 px-10 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-2xl text-[14px] font-black shadow-xl shadow-indigo-500/30"
-                            >
-                                <Send className="w-5 h-5" />
-                                <span>{wizardIndex === selectedUsers.length - 1 ? 'فتح المحادثة الأخيرة والإنهاء' : 'فتح المحادثة والتالي'}</span>
-                            </motion.button>
-                            <button
-                                onClick={() => {
-                                    setIsWizardActive(false);
-                                    setIsSending(false);
-                                }}
-                                className="px-6 py-3 bg-rose-500/10 text-rose-500 rounded-2xl text-[12px] font-black"
-                            >
-                                إيقاف
-                            </button>
-                        </div>
-                    ) : !isSending && (
+                    {!isSending && (
                         <button
                             onClick={onClose}
                             className="px-8 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl text-[12px] font-black transition-all border border-slate-200 dark:border-white/5 shadow-sm active:scale-95"

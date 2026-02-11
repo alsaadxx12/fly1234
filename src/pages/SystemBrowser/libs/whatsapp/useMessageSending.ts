@@ -15,6 +15,9 @@ interface SendOptions {
     recipientType: 'group' | 'contact';
     account: { instance_id: string; token: string };
     delayMs: number;
+    maxDelayMs?: number;
+    useRandomDelay?: boolean;
+    useSpinTax?: boolean;
 }
 
 export default function useMessageSending() {
@@ -48,12 +51,20 @@ export default function useMessageSending() {
         setIsPaused(!isPausedRef.current);
     }, []);
 
+    // Spin-tax helper: {word1|word2} -> random selection
+    const processSpinTax = (text: string) => {
+        return text.replace(/\{([^{}]+)\}/g, (match, options) => {
+            const choices = options.split('|');
+            return choices[Math.floor(Math.random() * choices.length)];
+        });
+    };
+
     const sendSingleMessage = async (recipient: { phone: string, name: string }, text: string, imageUrl: string | null, account: { instance_id: string; token: string }) => {
+        // ... (existing implementation)
         // Normalize instance ID
         const cleanId = account.instance_id.replace(/^instance/, '');
         const isHkAccount = account.instance_id.toLowerCase().includes('hk');
 
-        // Try both servers if needed
         const servers = isHkAccount
             ? ['hk.ultramsg.com', 'api.ultramsg.com']
             : ['api.ultramsg.com', 'hk.ultramsg.com'];
@@ -90,7 +101,7 @@ export default function useMessageSending() {
     };
 
     const sendMessage = useCallback(async (options: SendOptions) => {
-        const { text, imageUrl, recipients, account, delayMs } = options;
+        const { text, imageUrl, recipients, account, delayMs, maxDelayMs, useRandomDelay, useSpinTax } = options;
 
         setIsSending(true);
         setIsPaused(false);
@@ -98,10 +109,8 @@ export default function useMessageSending() {
         setSendProgress({ sent: 0, failed: 0, current: 'بدء عملية الإرسال...', total: recipients.length });
 
         for (let i = 0; i < recipients.length; i++) {
-            // Check if process was stopped
             if (!isSendingRef.current) break;
 
-            // Check if paused
             while (isPausedRef.current) {
                 if (!isSendingRef.current) return;
                 setSendProgress(prev => ({ ...prev, current: 'الإرسال متوقف مؤقتاً...' }));
@@ -110,30 +119,33 @@ export default function useMessageSending() {
 
             const recipient = recipients[i];
 
-            // Mandatory pre-send delay
+            // Wait Delay
+            let waitTime = delayRef.current;
+            if (useRandomDelay && maxDelayMs) {
+                // Random delay between min (delayMs) and max (maxDelayMs)
+                waitTime = Math.floor(Math.random() * (maxDelayMs - delayMs + 1)) + delayMs;
+            }
+
             setSendProgress(prev => ({ ...prev, current: `بانتظار الفاصل الزمني... (${recipient.name})` }));
 
-            // Allow dynamic delay adjustment during the send loop using the ref
-            let remainingDelay = delayRef.current;
-            while (remainingDelay > 0) {
+            let remaining = waitTime;
+            while (remaining > 0) {
                 if (!isSendingRef.current) return;
-                if (isPausedRef.current) break; // Go back to pause loop
-
-                const step = Math.min(1000, remainingDelay);
-                await new Promise(resolve => setTimeout(resolve, step));
-                remainingDelay -= step;
+                if (isPausedRef.current) break;
+                const step = Math.min(1000, remaining);
+                await new Promise(r => setTimeout(r, step));
+                remaining -= step;
             }
 
-            // Re-check after potential pause/stop during delay
             if (!isSendingRef.current) return;
-            if (isPausedRef.current) {
-                i--; // Repeat this recipient
-                continue;
-            }
+            if (isPausedRef.current) { i--; continue; }
 
             setSendProgress(prev => ({ ...prev, current: `جاري الإرسال إلى ${recipient.name}...` }));
 
-            const success = await sendSingleMessage(recipient, text, imageUrl, account);
+            // Process text with spin-tax if enabled
+            const finalMessage = useSpinTax ? processSpinTax(text) : text;
+
+            const success = await sendSingleMessage(recipient, finalMessage, imageUrl, account);
 
             if (success) {
                 setSendProgress(prev => ({ ...prev, sent: prev.sent + 1, current: `تم الإرسال لـ ${recipient.name}` }));
@@ -143,7 +155,7 @@ export default function useMessageSending() {
         }
 
         setIsSending(false);
-    }, [sendSingleMessage]); // No dependencies to avoid recreating the function and breaking the loop
+    }, []);
 
     return {
         isSending,
