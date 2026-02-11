@@ -11,7 +11,6 @@ import {
     RefreshCw,
     Activity,
     Send,
-    ShieldCheck,
     Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +35,10 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
     const [error, setError] = useState<string | null>(null);
     const [sendingMethod, setSendingMethod] = useState<'api' | 'direct'>('api');
     const [directSubMode, setDirectSubMode] = useState<'web' | 'app'>('web');
+
+    // Wizard State for Direct Mode
+    const [isWizardActive, setIsWizardActive] = useState(false);
+    const [wizardIndex, setWizardIndex] = useState(0);
 
     const {
         isSending,
@@ -134,34 +137,10 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                     delayMs: currentDelayMs
                 });
             } else {
-                // Direct Method (wa.me links vs Native App)
-                for (let i = 0; i < recipients.length; i++) {
-                    const recipient = recipients[i];
-                    const phone = recipient.phone.replace(/\D/g, '');
-                    const encodedText = encodeURIComponent(message);
-
-                    let url = '';
-                    let target = '_blank';
-
-                    if (directSubMode === 'web') {
-                        // Use web.whatsapp.com with a persistent window name to avoid multiple tabs
-                        url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
-                        target = 'whatsapp_window';
-                    } else {
-                        // Use the native app protocol
-                        url = `whatsapp://send?phone=${phone}&text=${encodedText}`;
-                        target = '_self'; // Protocol handlers don't need a new tab
-                    }
-
-                    // In Direct mode, we mark as success when we attempt to open the link
-                    setLogs(prev => prev.map(l => l.id === recipient.id ? { ...l, status: 'success' } : l));
-
-                    window.open(url, target);
-
-                    // Delay to avoid overwhelming the system/browser
-                    await new Promise(r => setTimeout(r, 800));
-                }
-                setIsSending(false);
+                // Direct Method -> Activate Wizard instead of automated loop
+                setIsWizardActive(true);
+                setWizardIndex(0);
+                setIsSending(true); // Keep UI in "Sending" state
             }
 
             if (_onSend) {
@@ -433,13 +412,69 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                         <BroadcastProgressPanel
                             isSending={isSending}
                             isPaused={isPaused}
-                            sendProgress={sendProgress}
+                            sendProgress={isWizardActive ? {
+                                sent: wizardIndex,
+                                failed: 0,
+                                total: selectedUsers.length,
+                                current: `انتظار إرسال الرسالة رقم ${wizardIndex + 1}`
+                            } : sendProgress}
                             currentDelayMs={currentDelayMs}
                             onTogglePause={togglePause}
                             onSetDelay={setCurrentDelayMs}
                         />
                     </div>
-                    {!isSending && (
+
+                    {isWizardActive ? (
+                        <div className="flex items-center gap-3">
+                            <div className="flex flex-col items-end mr-4">
+                                <span className="text-[10px] font-black text-slate-500 uppercase">المستلم الحالي</span>
+                                <span className="text-sm font-black text-indigo-500">{selectedUsers[wizardIndex]?.fullname || selectedUsers[wizardIndex]?.name}</span>
+                            </div>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => {
+                                    const recipient = selectedUsers[wizardIndex];
+                                    const phone = (recipient.mobile || recipient.phone).replace(/\D/g, '');
+                                    const encodedText = encodeURIComponent(message);
+
+                                    let url = '';
+                                    let target = '_blank';
+
+                                    if (directSubMode === 'web') {
+                                        url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+                                        target = 'whatsapp_window';
+                                    } else {
+                                        url = `whatsapp://send?phone=${phone}&text=${encodedText}`;
+                                        target = '_self';
+                                    }
+
+                                    window.open(url, target);
+
+                                    // Move to next
+                                    if (wizardIndex < selectedUsers.length - 1) {
+                                        setWizardIndex(prev => prev + 1);
+                                    } else {
+                                        setIsWizardActive(false);
+                                        setIsSending(false);
+                                    }
+                                }}
+                                className="flex items-center gap-2.5 h-12 px-10 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-2xl text-[14px] font-black shadow-xl shadow-indigo-500/30"
+                            >
+                                <Send className="w-5 h-5" />
+                                <span>{wizardIndex === selectedUsers.length - 1 ? 'فتح المحادثة الأخيرة والإنهاء' : 'فتح المحادثة والتالي'}</span>
+                            </motion.button>
+                            <button
+                                onClick={() => {
+                                    setIsWizardActive(false);
+                                    setIsSending(false);
+                                }}
+                                className="px-6 py-3 bg-rose-500/10 text-rose-500 rounded-2xl text-[12px] font-black"
+                            >
+                                إيقاف
+                            </button>
+                        </div>
+                    ) : !isSending && (
                         <button
                             onClick={onClose}
                             className="px-8 py-3 bg-slate-100 dark:bg-white/5 text-slate-500 dark:text-white/60 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-white/10 rounded-2xl text-[12px] font-black transition-all border border-slate-200 dark:border-white/5 shadow-sm active:scale-95"
