@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { UserPlus, Loader2, ShieldCheck, Mail, Lock, User } from 'lucide-react';
+import { Loader2, ShieldCheck, Mail, Lock, User } from 'lucide-react';
 import { initializeSuperAdmin } from '../../lib/collections/setup';
 
 interface SystemInitProps {

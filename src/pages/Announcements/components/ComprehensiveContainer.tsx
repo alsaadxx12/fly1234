@@ -3,7 +3,7 @@ import { Contact, Search, RefreshCw, CheckCircle2, ImageIcon, Trash2, Plus, Rock
 import { motion, AnimatePresence } from 'framer-motion';
 import useWhatsAppContacts from '../../../hooks/useWhatsAppContacts';
 import useCompanies from '../../Companies/hooks/useCompanies';
-import { readExcelFile, validateExcelFile, cleanString } from '../../../lib/services/excelService';
+import { readExcelFile, cleanString } from '../../../lib/services/excelService';
 import { WhatsAppAccountSelector } from '../../SystemBrowser/libs/whatsapp/WhatsAppAccountSelector';
 import useImageUpload from '../../SystemBrowser/libs/whatsapp/useImageUpload';
 import useMessageSending from '../../SystemBrowser/libs/whatsapp/useMessageSending';
@@ -464,7 +464,7 @@ const ComprehensiveContainer: React.FC<ComprehensiveContainerProps> = ({
                     const chunk = dataRows.slice(i, i + CHUNK_SIZE);
 
                     chunk.forEach((row, chunkIdx) => {
-                        const globalIdx = i + chunkIdx;
+                        const _globalIdx = i + chunkIdx;
                         // Extract from selected columns
                         const phoneIndices = [selectedMapping.phoneIndex1];
                         if (selectedMapping.phoneIndex2 !== -1) {

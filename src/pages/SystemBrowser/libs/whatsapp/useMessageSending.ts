@@ -48,14 +48,7 @@ export default function useMessageSending() {
         setIsPaused(!isPausedRef.current);
     }, []);
 
-    const sendMessage = useCallback(async (options: SendOptions) => {
-        const { text, imageUrl, recipients, account, delayMs } = options;
-
-        setIsSending(true);
-        setIsPaused(false);
-        setCurrentDelayMs(delayMs);
-        setSendProgress({ sent: 0, failed: 0, current: 'بدء عملية الإرسال...', total: recipients.length });
-
+    const sendSingleMessage = async (recipient: { phone: string, name: string }, text: string, imageUrl: string | null, account: { instance_id: string; token: string }) => {
         // Normalize instance ID
         const cleanId = account.instance_id.replace(/^instance/, '');
         const isHkAccount = account.instance_id.toLowerCase().includes('hk');
@@ -64,6 +57,45 @@ export default function useMessageSending() {
         const servers = isHkAccount
             ? ['hk.ultramsg.com', 'api.ultramsg.com']
             : ['api.ultramsg.com', 'hk.ultramsg.com'];
+
+        let sent = false;
+        for (const server of servers) {
+            try {
+                const baseUrl = `https://${server}/instance${cleanId}/messages`;
+                const endpoint = imageUrl ? `${baseUrl}/image` : `${baseUrl}/chat`;
+
+                const payload: any = {
+                    token: account.token,
+                    to: recipient.phone,
+                };
+
+                if (imageUrl) {
+                    payload.image = imageUrl;
+                    payload.caption = text;
+                } else {
+                    payload.body = text;
+                }
+
+                const response = await axios.post(endpoint, payload);
+
+                if (response.data.sent === 'true' || response.data.sent === true) {
+                    sent = true;
+                    break;
+                }
+            } catch (error: any) {
+                console.error(`Error sending via ${server} to ${recipient.name}:`, error.message);
+            }
+        }
+        return sent;
+    };
+
+    const sendMessage = useCallback(async (options: SendOptions) => {
+        const { text, imageUrl, recipients, account, delayMs } = options;
+
+        setIsSending(true);
+        setIsPaused(false);
+        setCurrentDelayMs(delayMs);
+        setSendProgress({ sent: 0, failed: 0, current: 'بدء عملية الإرسال...', total: recipients.length });
 
         for (let i = 0; i < recipients.length; i++) {
             // Check if process was stopped
@@ -101,48 +133,23 @@ export default function useMessageSending() {
 
             setSendProgress(prev => ({ ...prev, current: `جاري الإرسال إلى ${recipient.name}...` }));
 
-            let sent = false;
-            for (const server of servers) {
-                try {
-                    const baseUrl = `https://${server}/instance${cleanId}/messages`;
-                    const endpoint = imageUrl ? `${baseUrl}/image` : `${baseUrl}/chat`;
+            const success = await sendSingleMessage(recipient, text, imageUrl, account);
 
-                    const payload: any = {
-                        token: account.token,
-                        to: recipient.phone,
-                    };
-
-                    if (imageUrl) {
-                        payload.image = imageUrl;
-                        payload.caption = text;
-                    } else {
-                        payload.body = text;
-                    }
-
-                    const response = await axios.post(endpoint, payload);
-
-                    if (response.data.sent === 'true' || response.data.sent === true) {
-                        setSendProgress(prev => ({ ...prev, sent: prev.sent + 1, current: `تم الإرسال لـ ${recipient.name}` }));
-                        sent = true;
-                        break; // Success!
-                    }
-                } catch (error: any) {
-                    console.error(`Error sending via ${server} to ${recipient.name}:`, error.message);
-                }
-            }
-
-            if (!sent) {
+            if (success) {
+                setSendProgress(prev => ({ ...prev, sent: prev.sent + 1, current: `تم الإرسال لـ ${recipient.name}` }));
+            } else {
                 setSendProgress(prev => ({ ...prev, failed: prev.failed + 1, current: `فشل لـ ${recipient.name}` }));
             }
         }
 
         setIsSending(false);
-    }, []); // No dependencies to avoid recreating the function and breaking the loop
+    }, [sendSingleMessage]); // No dependencies to avoid recreating the function and breaking the loop
 
     return {
         isSending,
         setIsSending,
         sendMessage,
+        sendSingleMessage,
         sendProgress,
         isPaused,
         togglePause,

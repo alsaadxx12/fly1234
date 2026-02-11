@@ -1,29 +1,26 @@
 import React from 'react';
 import { collection, getDocs, deleteDoc, doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../../lib/firebase';
-import { useLanguage } from '../../../contexts/LanguageContext';
-import { useTheme } from '../../../contexts/ThemeContext';
-import { Trash2, Globe, Check, Loader2, Printer, Building2, Info, Languages, CircleAlert as AlertCircle, Sparkles, X, Brain, Eye, EyeOff, Key } from 'lucide-react';
-import { useAuth } from '../../../contexts/AuthContext';
+
+import { Trash2, Globe, Check, Loader2, Printer, CircleAlert as AlertCircle } from 'lucide-react';
 import PrintTemplateEditor from './PrintTemplateEditor';
+import AISettingsTab from './AISettingsTab';
+import LanguageSettings from './LanguageSettings';
+import CompanySettings from './CompanySettings';
 
 export default function SystemSettings() {
-  const { t } = useLanguage();
-  const { language, setLanguage } = useLanguage();
-  const { user } = useAuth();
-  const { theme } = useTheme();
   const [isDeleteModalOpen, setIsDeleteModalOpen] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
   const [deleteSuccess, setDeleteSuccess] = React.useState<string | null>(null);
   const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const [_error, setError] = React.useState<string | null>(null);
   const [allowCustomCompanies, setAllowCustomCompanies] = React.useState(true);
-  const [settingsSuccess, setSettingsSuccess] = React.useState<string | null>(null);
+  const [_settingsSuccess, setSettingsSuccess] = React.useState<string | null>(null);
   const [aiApiKey, setAiApiKey] = React.useState('');
-  const [showApiKey, setShowApiKey] = React.useState(false);
-  const [isTestingKey, setIsTestingKey] = React.useState(false);
-  const [keyTestResult, setKeyTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
+  const [_showApiKey, _setShowApiKey] = React.useState(false);
+  const [_isTestingKey, setIsTestingKey] = React.useState(false);
+  const [_keyTestResult, setKeyTestResult] = React.useState<{ success: boolean; message: string } | null>(null);
 
   React.useEffect(() => {
     const loadSystemSettings = async () => {
@@ -78,7 +75,7 @@ export default function SystemSettings() {
     }
   };
 
-  const handleTestApiKey = async () => {
+  const _handleTestApiKey = async () => {
     if (!aiApiKey.trim()) {
       setKeyTestResult({ success: false, message: 'يرجى إدخال مفتاح API أولاً' });
       return;
@@ -103,7 +100,7 @@ export default function SystemSettings() {
       if (response.ok) {
         setKeyTestResult({ success: true, message: '✓ المفتاح صالح ويعمل بشكل صحيح!' });
       } else {
-        const errorData = await response.json().catch(() => ({}));
+        await response.json().catch(() => ({}));
         let errorMsg = 'المفتاح غير صالح';
 
         if (response.status === 400) {

@@ -1,4 +1,4 @@
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect, lazy, Suspense, useState, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ExchangeRateProvider } from './contexts/ExchangeRateContext';
@@ -15,6 +15,7 @@ import PermissionGuard from './components/PermissionGuard';
 import GlobalApiSync from './components/GlobalApiSync';
 import AppErrorBoundary from './components/AppErrorBoundary';
 import ConnectivityManager from './components/ConnectivityManager';
+import SplashScreen from './components/SplashScreen';
 import { checkAndCalculateEmployeeOfTheMonth } from './lib/services/employeeOfTheMonthService';
 import Subscriptions from './pages/Subscriptions';
 
@@ -169,6 +170,15 @@ import { Toaster } from 'sonner';
 import NotificationManager from './components/NotificationManager';
 
 export default function App() {
+  const [showSplash, setShowSplash] = useState(() => {
+    return !sessionStorage.getItem('splash_shown');
+  });
+
+  const handleSplashFinish = useCallback(() => {
+    sessionStorage.setItem('splash_shown', 'true');
+    setShowSplash(false);
+  }, []);
+
   return (
     <BrowserRouter>
       <AuthProvider>
@@ -181,6 +191,7 @@ export default function App() {
                   <ConnectivityManager />
                   <GlobalApiSync />
                   <NotificationManager />
+                  {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
                   <AppRoutes />
                 </GlobalModalsProvider>
               </NotificationProvider>

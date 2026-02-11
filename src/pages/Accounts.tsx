@@ -573,9 +573,9 @@ const Accounts = () => {
         </div>
       </ModernModal>
 
-      {isNewReceiptVoucherModalOpen && <NewReceiptVoucherModal isOpen={isNewReceiptVoucherModalOpen} onClose={() => setIsNewReceiptVoucherModalOpen(false)} settings={settings} />}
-      {isNewPaymentVoucherModalOpen && <NewPaymentVoucherModal isOpen={isNewPaymentVoucherModalOpen} onClose={() => setIsNewPaymentVoucherModalOpen(false)} />}
-      {isEditVoucherModalOpen && selectedVoucherId && editingVoucher && <EditVoucherModal isOpen={isEditVoucherModalOpen} onClose={() => { setIsEditVoucherModalOpen(false); setEditingVoucher(null); }} voucherId={selectedVoucherId} settings={settings} onVoucherUpdated={() => { }} />}
+      {isNewReceiptVoucherModalOpen && <NewReceiptVoucherModal isOpen={isNewReceiptVoucherModalOpen} onClose={() => { setIsNewReceiptVoucherModalOpen(false); setTimeout(() => fetchVouchersPage('first'), 300); }} settings={settings} />}
+      {isNewPaymentVoucherModalOpen && <NewPaymentVoucherModal isOpen={isNewPaymentVoucherModalOpen} onClose={() => { setIsNewPaymentVoucherModalOpen(false); setTimeout(() => fetchVouchersPage('first'), 300); }} />}
+      {isEditVoucherModalOpen && selectedVoucherId && editingVoucher && <EditVoucherModal isOpen={isEditVoucherModalOpen} onClose={() => { setIsEditVoucherModalOpen(false); setEditingVoucher(null); setTimeout(() => fetchVouchersPage('refresh'), 300); }} voucherId={selectedVoucherId} settings={settings} onVoucherUpdated={() => { fetchVouchersPage('refresh'); }} />}
       {isViewVoucherModalOpen && selectedVoucherId && <ViewVoucherDetailsModal isOpen={isViewVoucherModalOpen} onClose={() => { setIsViewVoucherModalOpen(false); setSelectedVoucherId(null); }} voucherId={selectedVoucherId} settings={settings} />}
 
       <ModernModal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="تأكيد الحذف" icon={<Trash2 className="w-8 h-8 text-red-600" />} footer={

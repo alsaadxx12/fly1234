@@ -696,7 +696,7 @@ const StatementPage: React.FC = () => {
         }
     };
 
-    const handlePDFExport = async () => {
+    const _handlePDFExport = async () => {
         if (!summary || !buyerId || !token) {
             alert('Missing required information to generate PDF');
             return;
@@ -1600,8 +1600,8 @@ const StatementPage: React.FC = () => {
                                         key={account.id || account.instance_id}
                                         onClick={() => setSelectedAccount(account)}
                                         className={`w-full p-4 rounded-xl border-2 transition-all text-right ${selectedAccount?.instance_id === account.instance_id
-                                                ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                                                : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-gray-600'
+                                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-green-300 dark:hover:border-gray-600'
                                             }`}
                                     >
                                         <div className="flex items-center justify-between">

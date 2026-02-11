@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
-    X,
     ImageIcon,
     Users,
     Search,
@@ -11,7 +10,9 @@ import {
     Rocket,
     RefreshCw,
     Activity,
-    Send
+    Send,
+    ShieldCheck,
+    Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useMessageSending from '../libs/whatsapp/useMessageSending';
@@ -33,6 +34,7 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedAccount, setSelectedAccount] = useState<{ instance_id: string; token: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [sendingMethod, setSendingMethod] = useState<'api' | 'direct'>('api');
 
     const {
         isSending,
@@ -94,7 +96,8 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
             setError('يرجى كتابة رسالة أو اختيار صورة');
             return;
         }
-        if (!selectedAccount) {
+
+        if (sendingMethod === 'api' && !selectedAccount) {
             setError('يرجى اختيار حساب واتساب أولاً');
             return;
         }
@@ -102,37 +105,57 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
         setError(null);
         setIsSending(true);
 
+        const recipients = selectedUsers.map(u => ({
+            id: u.id,
+            name: u.fullname || u.name,
+            phone: u.mobile || u.phone
+        })).filter(r => r.phone);
+
+        if (recipients.length === 0) {
+            setError('المستخدمون المختارون لا يملكون أرقام هواتف صالحة');
+            setIsSending(false);
+            return;
+        }
+
         try {
-            let imageUrl: string | null = null;
-            if (selectedImage) {
-                imageUrl = await uploadImageWithRetry(selectedImage, selectedAccount);
-            }
+            if (sendingMethod === 'api') {
+                let imageUrl: string | null = null;
+                if (selectedImage && selectedAccount) {
+                    imageUrl = await uploadImageWithRetry(selectedImage, selectedAccount);
+                }
 
-            const recipients = selectedUsers.map(u => ({
-                id: u.id,
-                name: u.fullname || u.name,
-                phone: u.mobile || u.phone
-            })).filter(r => r.phone);
+                await sendMessage({
+                    text: message,
+                    imageUrl: imageUrl,
+                    recipients: recipients,
+                    recipientType: 'contact',
+                    account: selectedAccount!,
+                    delayMs: currentDelayMs
+                });
+            } else {
+                // Direct Method (wa.me links) - Sequential 
+                // We'll open them one by one. Browsers might still block if too fast, 
+                // so we add a tiny delay or just acknowledge we opened them.
+                for (let i = 0; i < recipients.length; i++) {
+                    const recipient = recipients[i];
+                    const phone = recipient.phone.replace(/\D/g, '');
+                    const encodedText = encodeURIComponent(message);
+                    const url = `https://wa.me/${phone}?text=${encodedText}`;
 
-            if (recipients.length === 0) {
-                setError('المستخدمون المختارون لا يملكون أرقام هواتف صالحة');
+                    // In Direct mode, we mark as success when we open the link
+                    setLogs(prev => prev.map(l => l.id === recipient.id ? { ...l, status: 'success' } : l));
+
+                    window.open(url, '_blank');
+
+                    // Small sleep to help browser handles multiple windows if possible
+                    await new Promise(r => setTimeout(r, 500));
+                }
                 setIsSending(false);
-                return;
             }
-
-            await sendMessage({
-                text: message,
-                imageUrl: imageUrl,
-                recipients: recipients,
-                recipientType: 'contact',
-                account: selectedAccount,
-                delayMs: currentDelayMs
-            });
 
             if (_onSend) {
                 _onSend({
                     message,
-                    imageUrl,
                     recipientsCount: recipients.length,
                     timestamp: new Date().toISOString()
                 });
@@ -195,17 +218,45 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
             >
                 {/* Master Navigation Toolbar (Announcements Style) */}
                 <div className="px-6 py-3 flex flex-col md:flex-row items-center justify-between gap-6 bg-gradient-to-r from-[#2e1065] via-[#1e1b4b] to-[#0f172a] shadow-2xl z-20 shrink-0">
-                    {/* Account Selection HUD */}
+                    {/* Account Selection HUD & Method Toggle */}
                     <div className="flex items-center gap-2 shrink-0 h-11 px-3 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[inset_0_0_20px_rgba(255,255,255,0.02)] group/hud hover:border-white/20 transition-all duration-500">
+                        {/* Method Toggle */}
+                        <div className="flex items-center gap-1 p-1 bg-black/20 rounded-xl border border-white/5 mr-2">
+                            <button
+                                onClick={() => setSendingMethod('api')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${sendingMethod === 'api' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-white/40 hover:text-white/60'}`}
+                            >
+                                <RefreshCw className={`w-3 h-3 ${sendingMethod === 'api' ? 'animate-spin-slow' : ''}`} />
+                                AUTO (API)
+                            </button>
+                            <button
+                                onClick={() => setSendingMethod('direct')}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${sendingMethod === 'direct' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'text-white/40 hover:text-white/60'}`}
+                            >
+                                <Smartphone className="w-3 h-3" />
+                                SAFE (DIRECT)
+                            </button>
+                        </div>
+
+                        <div className="w-px h-4 bg-white/10 mx-1" />
+
                         <div className="flex items-center gap-2.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
-                            <span className="text-[9px] font-black text-white/40 uppercase tracking-[0.3em] hidden lg:block">المرسل</span>
+                            <div className={`w-1.5 h-1.5 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] ${sendingMethod === 'api' ? 'bg-emerald-500' : 'bg-slate-500'}`} />
                         </div>
                         <div className="w-px h-4 bg-white/10 mx-1.5" />
-                        <WhatsAppAccountSelector
-                            onAccountSelected={setSelectedAccount}
-                            initialAccount={selectedAccount}
-                        />
+
+                        {sendingMethod === 'api' ? (
+                            <WhatsAppAccountSelector
+                                onAccountSelected={setSelectedAccount}
+                                initialAccount={selectedAccount}
+                            />
+                        ) : (
+                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                                <span className="text-[10px] font-black text-emerald-400">إرسال آمن (مباشر)</span>
+                            </div>
+                        )}
+
                         <div className="w-px h-6 bg-white/10 mx-1.5" />
                         <div className="flex items-center gap-2 h-8 px-2.5 bg-indigo-500/10 border border-indigo-500/20 rounded-xl">
                             <Users className="w-3.5 h-3.5 text-indigo-400" />

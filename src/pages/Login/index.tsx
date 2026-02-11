@@ -28,7 +28,7 @@ const Login: React.FC = () => {
 
     const [showWelcome, setShowWelcome] = useState(false);
     const { customSettings } = useTheme();
-    const [isEmpty, setIsEmpty] = useState(false);
+    const [_isEmpty, setIsEmpty] = useState(false);
     const [showInit, setShowInit] = useState(false);
 
     useEffect(() => {
