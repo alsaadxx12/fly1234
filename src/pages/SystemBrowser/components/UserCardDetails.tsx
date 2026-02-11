@@ -74,8 +74,8 @@ const UserCardDetails: React.FC<UserCardProps> = ({ user, isSelected, onToggleSe
                         </div>
                         {user.mobile && (
                             <a
-                                href={`https://wa.me/${user.mobile.replace(/\+/g, '')}`}
-                                target="_blank"
+                                href={`https://web.whatsapp.com/send?phone=${user.mobile.replace(/\D/g, '')}`}
+                                target="whatsapp_window"
                                 rel="noreferrer"
                                 onClick={(e) => e.stopPropagation()}
                                 className="p-1 rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-colors"

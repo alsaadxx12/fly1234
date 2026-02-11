@@ -35,6 +35,7 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
     const [selectedAccount, setSelectedAccount] = useState<{ instance_id: string; token: string } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [sendingMethod, setSendingMethod] = useState<'api' | 'direct'>('api');
+    const [directSubMode, setDirectSubMode] = useState<'web' | 'app'>('web');
 
     const {
         isSending,
@@ -133,22 +134,32 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                     delayMs: currentDelayMs
                 });
             } else {
-                // Direct Method (wa.me links) - Sequential 
-                // We'll open them one by one. Browsers might still block if too fast, 
-                // so we add a tiny delay or just acknowledge we opened them.
+                // Direct Method (wa.me links vs Native App)
                 for (let i = 0; i < recipients.length; i++) {
                     const recipient = recipients[i];
                     const phone = recipient.phone.replace(/\D/g, '');
                     const encodedText = encodeURIComponent(message);
-                    const url = `https://wa.me/${phone}?text=${encodedText}`;
 
-                    // In Direct mode, we mark as success when we open the link
+                    let url = '';
+                    let target = '_blank';
+
+                    if (directSubMode === 'web') {
+                        // Use web.whatsapp.com with a persistent window name to avoid multiple tabs
+                        url = `https://web.whatsapp.com/send?phone=${phone}&text=${encodedText}`;
+                        target = 'whatsapp_window';
+                    } else {
+                        // Use the native app protocol
+                        url = `whatsapp://send?phone=${phone}&text=${encodedText}`;
+                        target = '_self'; // Protocol handlers don't need a new tab
+                    }
+
+                    // In Direct mode, we mark as success when we attempt to open the link
                     setLogs(prev => prev.map(l => l.id === recipient.id ? { ...l, status: 'success' } : l));
 
-                    window.open(url, '_blank');
+                    window.open(url, target);
 
-                    // Small sleep to help browser handles multiple windows if possible
-                    await new Promise(r => setTimeout(r, 500));
+                    // Delay to avoid overwhelming the system/browser
+                    await new Promise(r => setTimeout(r, 800));
                 }
                 setIsSending(false);
             }
@@ -251,9 +262,19 @@ const BroadcastModal: React.FC<BroadcastModalProps> = ({ isOpen, onClose, select
                                 initialAccount={selectedAccount}
                             />
                         ) : (
-                            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
-                                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                <span className="text-[10px] font-black text-emerald-400">إرسال آمن (مباشر)</span>
+                            <div className="flex items-center gap-2 p-1 bg-black/10 rounded-xl border border-white/5">
+                                <button
+                                    onClick={() => setDirectSubMode('web')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[8px] font-black transition-all ${directSubMode === 'web' ? 'bg-indigo-500 text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                                >
+                                    WEB TAB
+                                </button>
+                                <button
+                                    onClick={() => setDirectSubMode('app')}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[9px] font-black transition-all ${directSubMode === 'app' ? 'bg-emerald-500 text-white shadow-lg' : 'text-white/40 hover:text-white/60'}`}
+                                >
+                                    NATIVE APP
+                                </button>
                             </div>
                         )}
 
